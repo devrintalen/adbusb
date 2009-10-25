@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
+/** \file adb.h
+    \brief Global routines for the ADB interface.
+*/
+
 int8_t adb_poll(void);
 int8_t adb_init(void);
 

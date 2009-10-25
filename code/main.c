@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
+/** \file main.c
+    \brief Main program source.
+
+    This file contains global routines and interrupts.
+*/
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +27,13 @@
 
 #include "adb.h"
 
+/// Reset entry point.
+/**
+    At reset the device starts executing at this point. This will call
+    initializers to set up the ADB and USB interfaces. It then enters the main
+    loop and polls the ADB device and sends data on the USB interface as
+    needed.
+*/
 uint8_t main(void)
 {
     while(1) ;
