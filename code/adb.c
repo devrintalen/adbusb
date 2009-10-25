@@ -14,3 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
+#define ADB_CMD_FLUSH 0
+#define ADB_CMD_LISTEN 2
+#define ADB_CMD_TALK 3
+
+#define ADB_TIME_ATTN 800
+#define ADB_TIME_SYNC 70
+#define ADB_TIME_BIT 100
+
+#define ADB_TIME_BIT_LONG 65
+#define ADB_TIME_BIT_SHORT 35
+
+#include "adb.h"
+
+int8_t adb_init(void)
+{
+}
+
+int8_t adb_poll(void)
+{
+}
