@@ -20,6 +20,8 @@
     Defines routines and interrupts specific to the ADB interface.
 */
 
+#include "adb.h"
+
 /// 2b code for a flush command.
 #define ADB_CMD_FLUSH 0
 /// 2b code for a listen command.
@@ -39,7 +41,27 @@
 /// Time (in μs) to hold the non-significant part of a bit.
 #define ADB_TIME_BIT_SHORT 35
 
-#include "adb.h"
+/// Define a mocro to delay for long amounts of microseconds.
+/**
+    With a clock at 16MHz the maximum time that can be delayed is:
+    (for μs) 768/16 = 48
+    This macro is needed to delay for longer amounts of time than that.
+*/
+#define LONG_DELAY_US(t) \
+    delay_amt = t; \
+    while(delay_amt > 0) { _delay_us(48.0); }
+/// Define a mocro to delay for long amounts of milliseconds.
+/**
+    With a clock at 16MHz the maximum time that can be delayed is:
+    (for ms) 262.14/16 = 16.38
+    This macro is needed to delay for longer amounts of time than that.
+*/
+#define LONG_DELAY_MS(t) \
+    delay_amt = t; \
+    while(delay_amt > 0) { _delay_ms(16.38); }
+
+/// Address of last polled device
+uint8_t last_device;
 
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
@@ -49,4 +71,24 @@ int8_t adb_init(void)
 /// Polls the active device for new data.
 int8_t adb_poll(void)
 {
+    /*  The algorithm for polling devices is:
+        1. Assert attention signal.
+        2. Assert sync signal.
+        3. Send command byte.
+        4. Send stop bit.
+        5. Release line.
+    */
+
+    /// Needed for delay macro
+    uint8_t delay_amt;
+    
+    // Send attention signal
+    ADB_PORT = 0;
+    LONG_DELAY_US(ADB_TIME_ATTN);
+
+    // Send sync signal
+    ADB_PORT = 1;
+    LONG_DELAY_US(ADB_TIME_SYNC);
+
+    // Send each bit 
 }

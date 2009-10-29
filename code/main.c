@@ -24,6 +24,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+/// Clock speed must be defined for delay.h
+#define F_CPU 16000000UL
+#include <util/delay.h>
 
 #include "adb.h"
 
