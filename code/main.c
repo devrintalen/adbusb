@@ -39,7 +39,7 @@
     loop and polls the ADB device and sends data on the USB interface as
     needed.
 */
-uint8_t main(void)
+int main(void)
 {
     while(1) ;
 
