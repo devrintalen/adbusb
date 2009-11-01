@@ -20,6 +20,12 @@
     Defines routines and interrupts specific to the ADB interface.
 */
 
+#include <stdint.h>
+#include <avr/io.h>
+/// Clock speed must be defined for delay.h
+#define F_CPU 16000000UL
+#include <util/delay.h>
+
 #include "adb.h"
 
 /// 2b code for a flush command.
@@ -30,18 +36,18 @@
 #define ADB_CMD_TALK 3
 
 /// Time (in μs) for an attention signal.
-#define ADB_TIME_ATTN 800
+#define ADB_TIME_ATTN 800.0
 /// Time (in μs) for a sync signal.
-#define ADB_TIME_SYNC 70
+#define ADB_TIME_SYNC 70.0
 /// Time (in μs) for an individual bit.
-#define ADB_TIME_BIT 100
+#define ADB_TIME_BIT 100.0
 
 /// Time (in μs) to hold the significant part of a bit.
-#define ADB_TIME_BIT_LONG 65
+#define ADB_TIME_BIT_LONG 65.0
 /// Time (in μs) to hold the non-significant part of a bit.
-#define ADB_TIME_BIT_SHORT 35
+#define ADB_TIME_BIT_SHORT 35.0
 
-/// Define a mocro to delay for long amounts of microseconds.
+/// Define a macro to delay for long amounts of microseconds.
 /**
     With a clock at 16MHz the maximum time that can be delayed is:
     (for μs) 768/16 = 48
@@ -49,8 +55,8 @@
 */
 #define LONG_DELAY_US(t) \
     delay_amt = t; \
-    while(delay_amt > 0) { _delay_us(48.0); }
-/// Define a mocro to delay for long amounts of milliseconds.
+    while(delay_amt > 0) { _delay_us(48.0); delay_amt -= 48.0; }
+/// Define a macro to delay for long amounts of milliseconds.
 /**
     With a clock at 16MHz the maximum time that can be delayed is:
     (for ms) 262.14/16 = 16.38
@@ -58,7 +64,7 @@
 */
 #define LONG_DELAY_MS(t) \
     delay_amt = t; \
-    while(delay_amt > 0) { _delay_ms(16.38); }
+    while(delay_amt > 0) { _delay_ms(16.38); delay_amt -= 16.38; }
 
 /// Address of last polled device
 uint8_t last_device;
@@ -80,14 +86,14 @@ int8_t adb_poll(void)
     */
 
     /// Needed for delay macro
-    uint8_t delay_amt;
+    double delay_amt;
     
     // Send attention signal
-    ADB_PORT = 0;
+    PORTC = 0;
     LONG_DELAY_US(ADB_TIME_ATTN);
 
     // Send sync signal
-    ADB_PORT = 1;
+    PORTC = 1;
     LONG_DELAY_US(ADB_TIME_SYNC);
 
     // Send each bit 
