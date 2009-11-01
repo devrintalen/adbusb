@@ -1,16 +1,24 @@
 AVR = atmega32
+OBJECTS=main.o adb.o
+
+CC=avr-gcc
+CFLAGS=-Wall -g -Os -mmcu=$(AVR)
+OBJCOPY=avr-objcopy
+OBJCOPYFLAGS=-j .text -j .data -O ihex
+PROGRAMMER=avrdude
+PROGFLAGS=-q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U flash:w:main.hex
 
 %.o : %.c
-	avr-gcc -g -Os -mmcu=$(AVR) -c $^
+	$(CC) $(CFLAGS) -c $^
 
-%.elf : %.o
-	avr-gcc -g -mmcu=$(AVR) -o $@ $^
+%.hex : %.o
+	$(OBJCOPY) $(OBJCOPYFLAGS) a.out $@
 
-%.hex : %.elf
-	avr-objcopy -j .text -j .data -O ihex $^ $@
+all: $(OBJECTS)
+	$(CC) $(CFLAGS) $^
 
 install: main.hex
 	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U flash:w:main.hex
 
 clean:
-	rm -f *.o *.elf *.hex
+	rm -f *.o *.elf *.hex a.out
