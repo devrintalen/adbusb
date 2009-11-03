@@ -23,6 +23,11 @@
 #include <stdint.h>
 #include <avr/io.h>
 /// Clock speed must be defined for delay.h
+/**
+    With a clock at 16MHz the maximum time that can be delayed is:
+    (for μs) 768/16 = 48
+    (for ms) 262.14/16 = 16.38
+*/
 #define F_CPU 16000000UL
 #include <util/delay.h>
 
@@ -47,24 +52,14 @@
 /// Time (in μs) to hold the non-significant part of a bit.
 #define ADB_TIME_BIT_SHORT 35.0
 
-/// Define a macro to delay for long amounts of microseconds.
-/**
-    With a clock at 16MHz the maximum time that can be delayed is:
-    (for μs) 768/16 = 48
-    This macro is needed to delay for longer amounts of time than that.
-*/
-#define LONG_DELAY_US(t) \
-    delay_amt = t; \
-    while(delay_amt > 0) { _delay_us(47.0); delay_amt -= 47.0; }
-/// Define a macro to delay for long amounts of milliseconds.
-/**
-    With a clock at 16MHz the maximum time that can be delayed is:
-    (for ms) 262.14/16 = 16.38
-    This macro is needed to delay for longer amounts of time than that.
-*/
-#define LONG_DELAY_MS(t) \
-    delay_amt = t; \
-    while(delay_amt > 0) { _delay_ms(16.38); delay_amt -= 16.38; }
+/// Macro to delay 35 us
+#define ADB_DELAY_35 _delay_us(35.0)
+/// Macro to delay 65 us
+#define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0)
+/// Macro to delay 70 us
+#define ADB_DELAY_70 _delay_us(35.0); _delay_us(35.0)
+/// Macro to delay 800 us
+#define ADB_DELAY_800 _delay_ms(0.80)
 
 /// Address of last polled device
 uint8_t last_device;
@@ -72,17 +67,14 @@ uint8_t last_device;
 /// Send a bit
 int8_t adb_txbit(uint8_t bit)
 {
-    /// Needed for delay macro
-    double delay_amt;
-
     // Lower line
     PORTC = 0;
 
     // Delay for: 0 -> 65us, 1 -> 35us
     if (bit == 0) {
-        LONG_DELAY_US(65)
+        ADB_DELAY_65;
     } else {
-        LONG_DELAY_US(35)
+        ADB_DELAY_35;
     }
 
     // Raise line
@@ -90,9 +82,9 @@ int8_t adb_txbit(uint8_t bit)
 
     // Delay for: 0 -> 35us, 1 -> 65us
     if (bit == 0) {
-        LONG_DELAY_US(35)
+        ADB_DELAY_35;
     } else {
-        LONG_DELAY_US(65)
+        ADB_DELAY_65;
     }
 
     return 0;
@@ -158,12 +150,11 @@ int8_t adb_poll(void)
     
     // Send attention signal
     PORTC = 0;
-    LONG_DELAY_US(ADB_TIME_ATTN);
+    ADB_DELAY_800;
 
     // Send sync signal
     PORTC = 1;
-    /*
-    LONG_DELAY_US(ADB_TIME_SYNC);
+    ADB_DELAY_70;
 
     // Send command byte
     adb_txbyte(command);
@@ -174,6 +165,5 @@ int8_t adb_poll(void)
     // Release line
     PORTC = 1;
 
-*/
     return 0;
 }
