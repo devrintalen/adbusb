@@ -34,7 +34,10 @@ int main(void)
 {
     adb_init();
 
-    while(1) ;
+    while(1)
+    {
+        adb_poll();
+    }
 
     return 0;
 }
