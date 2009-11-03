@@ -55,7 +55,7 @@
 */
 #define LONG_DELAY_US(t) \
     delay_amt = t; \
-    while(delay_amt > 0) { _delay_us(48.0); delay_amt -= 48.0; }
+    while(delay_amt > 0) { _delay_us(47.0); delay_amt -= 47.0; }
 /// Define a macro to delay for long amounts of milliseconds.
 /**
     With a clock at 16MHz the maximum time that can be delayed is:
@@ -69,9 +69,69 @@
 /// Address of last polled device
 uint8_t last_device;
 
+/// Send a bit
+int8_t adb_txbit(uint8_t bit)
+{
+    /// Needed for delay macro
+    double delay_amt;
+
+    // Lower line
+    PORTC = 0;
+
+    // Delay for: 0 -> 65us, 1 -> 35us
+    if (bit == 0) {
+        LONG_DELAY_US(65)
+    } else {
+        LONG_DELAY_US(35)
+    }
+
+    // Raise line
+    PORTC = 1;
+
+    // Delay for: 0 -> 35us, 1 -> 65us
+    if (bit == 0) {
+        LONG_DELAY_US(35)
+    } else {
+        LONG_DELAY_US(65)
+    }
+
+    return 0;
+}
+
+/// Send a command byte
+int8_t adb_txbyte(uint8_t command)
+{
+    /// Loop iterator
+    uint8_t i;
+
+    // For each of the 8 bits
+    for(i = 0; i < 8; i++)
+    {
+        // Send leftmost bit
+        if (command & 0x80) {
+            adb_txbit(1);
+        } else {
+            adb_txbit(0);
+        }
+
+        command = command << 1;
+    }
+
+    return 0;
+}
+
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
 {
+    // Configure port c for output
+    DDRC = 0xFF;
+
+    // Raise line for idle state
+    PORTC = 1;
+
+    last_device = 3;
+
+    return 0;
 }
 
 /// Polls the active device for new data.
@@ -87,6 +147,14 @@ int8_t adb_poll(void)
 
     /// Needed for delay macro
     double delay_amt;
+
+    /// Command packet
+    uint8_t command = 0;
+
+    // Construct the command packet
+    command |= last_device << 4; // address
+    command |= ADB_CMD_TALK << 2; // command
+    command |= 0; // register
     
     // Send attention signal
     PORTC = 0;
@@ -94,7 +162,18 @@ int8_t adb_poll(void)
 
     // Send sync signal
     PORTC = 1;
+    /*
     LONG_DELAY_US(ADB_TIME_SYNC);
 
-    // Send each bit 
+    // Send command byte
+    adb_txbyte(command);
+
+    // Send stop bit
+    adb_txbit(0);
+
+    // Release line
+    PORTC = 1;
+
+*/
+    return 0;
 }
