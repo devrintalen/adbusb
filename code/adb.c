@@ -25,8 +25,8 @@
 /// Clock speed must be defined for delay.h
 /**
     With a clock at 16MHz the maximum time that can be delayed is:
-    (for μs) 768/16 = 48
-    (for ms) 262.14/16 = 16.38
+    - for μs: \f$768/16 = 48\f$
+    - for ms: \f$262.14/16 = 16.38\f$
 */
 #define F_CPU 16000000UL
 #include <util/delay.h>
@@ -53,13 +53,13 @@
 #define ADB_TIME_BIT_SHORT 35.0
 
 /// Macro to delay 35 us
-#define ADB_DELAY_35 _delay_us(35.0)
+#define ADB_DELAY_35 _delay_us(35.0);
 /// Macro to delay 65 us
-#define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0)
+#define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0);
 /// Macro to delay 70 us
-#define ADB_DELAY_70 _delay_us(35.0); _delay_us(35.0)
+#define ADB_DELAY_70 _delay_us(35.0); _delay_us(35.0);
 /// Macro to delay 800 us
-#define ADB_DELAY_800 _delay_ms(0.80)
+#define ADB_DELAY_800 _delay_ms(0.80);
 
 /// Address of last polled device
 uint8_t last_device;
