@@ -65,6 +65,14 @@
 uint8_t last_device;
 
 /// Send a bit
+/**
+    A bit is 100 microseconds long and starts as a low signal and gets set at
+    some point. The point at which it becomes high depends on if a 0 or 1 is
+    being transmitted.
+
+    - A 0 is a 65μs low pulse followed by a 35μs high pulse
+    - A 1 is a 35μs low pulse followed by a 65μs high pulse
+*/
 int8_t adb_txbit(uint8_t bit)
 {
     // Lower line
@@ -91,9 +99,12 @@ int8_t adb_txbit(uint8_t bit)
 }
 
 /// Send a command byte
+/**
+    Just a wrapper to transmit eight bits.
+*/
 int8_t adb_txbyte(uint8_t command)
 {
-    /// Loop iterator
+    // Loop iterator
     uint8_t i;
 
     // For each of the 8 bits
@@ -137,10 +148,10 @@ int8_t adb_poll(void)
         5. Release line.
     */
 
-    /// Needed for delay macro
+    // Needed for delay macro
     double delay_amt;
 
-    /// Command packet
+    // Command packet
     uint8_t command = 0;
 
     // Construct the command packet
