@@ -21,6 +21,7 @@
 */
 
 #include <stdint.h>
+#include <util/delay.h>
 #include "adb.h"
 
 /// Reset entry point.
@@ -36,6 +37,7 @@ int main(void)
 
     while(1)
     {
+        _delay_ms(1000.0);
         adb_poll();
     }
 
