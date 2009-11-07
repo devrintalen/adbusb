@@ -28,7 +28,7 @@
     - for μs: \f$768/16 = 48\f$
     - for ms: \f$262.14/16 = 16.38\f$
 */
-#define F_CPU 16000000UL
+//#define F_CPU 16000000UL
 #include <util/delay.h>
 
 #include "adb.h"
@@ -59,7 +59,7 @@
 /// Macro to delay 70 us
 #define ADB_DELAY_70 _delay_us(35.0); _delay_us(35.0);
 /// Macro to delay 800 us
-#define ADB_DELAY_800 _delay_ms(0.80);
+#define ADB_DELAY_800 _delay_us(800.0);
 
 /// Address of last polled device
 uint8_t last_device;
@@ -147,9 +147,6 @@ int8_t adb_poll(void)
         4. Send stop bit.
         5. Release line.
     */
-
-    // Needed for delay macro
-    double delay_amt;
 
     // Command packet
     uint8_t command = 0;
