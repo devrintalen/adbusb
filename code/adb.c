@@ -123,6 +123,46 @@ int8_t adb_txbyte(uint8_t command)
     return 0;
 }
 
+/// Send a command packet.
+/**
+    Constructs a command packet out of the supplied arguments. Takes care of
+    asserting the attention and sync signals, and the stop bit. The algorithm
+    is:
+
+    -# Assert attention signal.
+    -# Assert sync signal.
+    -# Send command byte.
+    -# Send stop bit.
+    -# Release line.
+*/
+int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
+{
+    // command byte
+    uint8_t packet = 0;
+    packet |= address << 4;
+    packet |= command << 2;
+    packet |= reg;
+
+    // Send attention signal
+    PORTC = 0;
+    ADB_DELAY_800;
+
+    // Send sync signal
+    PORTC = 1;
+    ADB_DELAY_70;
+
+    // Send command byte
+    adb_txbyte(packet);
+
+    // Send stop bit
+    adb_txbit(0);
+
+    // Release line
+    PORTC = 1;
+
+    return 0;
+}
+
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
 {
@@ -140,38 +180,13 @@ int8_t adb_init(void)
 /// Polls the active device for new data.
 int8_t adb_poll(void)
 {
-    /*  The algorithm for polling devices is:
-        1. Assert attention signal.
-        2. Assert sync signal.
-        3. Send command byte.
-        4. Send stop bit.
-        5. Release line.
-    */
+    // Send a poll command
+    adb_command(last_device, ADB_CMD_TALK, 0);
 
-    // Command packet
-    uint8_t command = 0;
-
-    // Construct the command packet
-    command |= last_device << 4; // address
-    command |= ADB_CMD_TALK << 2; // command
-    command |= 0; // register
-    
-    // Send attention signal
-    PORTC = 0;
-    ADB_DELAY_800;
-
-    // Send sync signal
-    PORTC = 1;
-    ADB_DELAY_70;
-
-    // Send command byte
-    adb_txbyte(command);
-
-    // Send stop bit
-    adb_txbit(0);
-
-    // Release line
-    PORTC = 1;
+    // Set interrupt on port c to wait for data and watchdog timer for timeout
+    // protection.
+    wdt_enable(WDTO_15MS);
+    wdt_reset();
 
     return 0;
 }
