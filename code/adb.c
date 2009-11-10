@@ -30,6 +30,8 @@
 */
 //#define F_CPU 16000000UL
 #include <util/delay.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
 
 #include "adb.h"
 
@@ -61,6 +63,11 @@
 /// Macro to delay 800 us
 #define ADB_DELAY_800 _delay_us(800.0);
 
+/// Output low value
+#define ADB_TX_LOW 0x0
+/// Output high value
+#define ADB_TX_HIGH 0x4
+
 /// Address of last polled device
 uint8_t last_device;
 
@@ -76,7 +83,7 @@ uint8_t last_device;
 int8_t adb_txbit(uint8_t bit)
 {
     // Lower line
-    PORTC = 0;
+    PORTD = ADB_TX_LOW;
 
     // Delay for: 0 -> 65us, 1 -> 35us
     if (bit == 0) {
@@ -86,7 +93,7 @@ int8_t adb_txbit(uint8_t bit)
     }
 
     // Raise line
-    PORTC = 1;
+    PORTD = ADB_TX_HIGH;
 
     // Delay for: 0 -> 35us, 1 -> 65us
     if (bit == 0) {
@@ -144,11 +151,11 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     packet |= reg;
 
     // Send attention signal
-    PORTC = 0;
+    PORTD = ADB_TX_LOW;
     ADB_DELAY_800;
 
     // Send sync signal
-    PORTC = 1;
+    PORTD = ADB_TX_HIGH;
     ADB_DELAY_70;
 
     // Send command byte
@@ -158,7 +165,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     adb_txbit(0);
 
     // Release line
-    PORTC = 1;
+    PORTD = ADB_TX_HIGH;
 
     return 0;
 }
@@ -166,13 +173,17 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
 {
-    // Configure port c for output
-    DDRC = 0xFF;
+    // Configure port d for output
+    DDRD = 0xFF;
+    DDRB = 0xFF;
 
     // Raise line for idle state
-    PORTC = 1;
+    PORTD = ADB_TX_HIGH;
 
-    last_device = 3;
+    last_device = 2;
+
+    // Enable interrupts
+    sei();
 
     return 0;
 }
@@ -180,13 +191,31 @@ int8_t adb_init(void)
 /// Polls the active device for new data.
 int8_t adb_poll(void)
 {
+    PORTB = 0xFF;
+    DDRD = 0xFF;
     // Send a poll command
     adb_command(last_device, ADB_CMD_TALK, 0);
 
     // Set interrupt on port c to wait for data and watchdog timer for timeout
     // protection.
-    wdt_enable(WDTO_15MS);
-    wdt_reset();
+    //wdt_enable(WDTO_15MS);
+    //wdt_reset();
+    //wdt_disable();
+
+    // Wait for input
+    DDRD = 0x00;
+    //PORTD = ADB_TX_HIGH;
+    //MCUCR |= 0x2; // trigger on falling edge of int0
+    GICR |= 0x40; // enable int0
+
+    _delay_ms(0.1);
+
+    GICR &= 0xBF; // disable int0
 
     return 0;
+}
+
+ISR(INT0_vect)
+{
+    PORTB = 0xFE;
 }

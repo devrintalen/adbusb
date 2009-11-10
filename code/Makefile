@@ -2,7 +2,7 @@ AVR = atmega32
 OBJECTS=main.o adb.o
 
 CC=avr-gcc
-CFLAGS=-Wall -g -O2 -mmcu=$(AVR) -D F_CPU=1000000UL
+CFLAGS=-Wall -g -O2 -mmcu=$(AVR) -D F_CPU=980000UL
 OBJCOPY=avr-objcopy
 OBJCOPYFLAGS=-j .text -j .data -O ihex
 PROGRAMMER=avrdude
