@@ -182,6 +182,8 @@ int8_t adb_init(void)
 
     last_device = 2;
 
+    GICR &= ~(1 << 6); // disable int0
+
     // Enable interrupts
     sei();
 
@@ -205,12 +207,13 @@ int8_t adb_poll(void)
     // Wait for input
     DDRD = 0x00;
     //PORTD = ADB_TX_HIGH;
-    //MCUCR |= 0x2; // trigger on falling edge of int0
-    GICR |= 0x40; // enable int0
+    MCUCR &= ~0x03; // clear int0 config bits
+    MCUCR |= 0x02; // trigger on falling edge of int0
+    GICR |= (1 << 6); // enable int0
 
-    _delay_ms(0.1);
+    _delay_us(200.0);
 
-    GICR &= 0xBF; // disable int0
+    GICR &= ~(1 << 6); // disable int0
 
     return 0;
 }
