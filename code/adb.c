@@ -130,6 +130,41 @@ int8_t adb_txbyte(uint8_t command)
     return 0;
 }
 
+/// Receive a data packet.
+/**
+    Places the MCU into a receive state and waits for a response. If none is
+    given then it will return 1, if it receives data it will fill the given
+    buffer with data and return 0.
+*/
+int8_t adb_rx(uint8_t *buff, uint8_t *len)
+{
+    // Set interrupt on port c to wait for data and watchdog timer for timeout
+    // protection.
+    //wdt_enable(WDTO_15MS);
+    //wdt_reset();
+    //wdt_disable();
+
+    PORTB = 0xFF;
+
+    // Wait for input
+    DDRD = 0x00;
+/*
+    MCUCR &= ~0x03; // clear int0 config bits
+    MCUCR |= 0x02; // trigger on falling edge of int0
+    GICR |= (1 << 6); // enable int0
+    _delay_us(200.0); // device usually responds in 150us
+    GICR &= ~(1 << 6); // disable int0
+*/
+
+    return 0;
+}
+
+/// External interrupt 0 vector
+ISR(INT0_vect)
+{
+    PORTB = 0xFE;
+}
+
 /// Send a command packet.
 /**
     Constructs a command packet out of the supplied arguments. Takes care of
@@ -193,32 +228,11 @@ int8_t adb_init(void)
 /// Polls the active device for new data.
 int8_t adb_poll(void)
 {
-    PORTB = 0xFF;
     DDRD = 0xFF;
+
     // Send a poll command
-    adb_command(last_device, ADB_CMD_TALK, 0);
-
-    // Set interrupt on port c to wait for data and watchdog timer for timeout
-    // protection.
-    //wdt_enable(WDTO_15MS);
-    //wdt_reset();
-    //wdt_disable();
-
-    // Wait for input
-    DDRD = 0x00;
-    //PORTD = ADB_TX_HIGH;
-    MCUCR &= ~0x03; // clear int0 config bits
-    MCUCR |= 0x02; // trigger on falling edge of int0
-    GICR |= (1 << 6); // enable int0
-
-    _delay_us(200.0);
-
-    GICR &= ~(1 << 6); // disable int0
+    adb_command(last_device, ADB_CMD_TALK, 3);
+    adb_rx(0, 0);
 
     return 0;
-}
-
-ISR(INT0_vect)
-{
-    PORTB = 0xFE;
 }
