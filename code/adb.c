@@ -208,12 +208,6 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     return 0;
 }
 
-/// Receive data.
-int8_t adb_rx(uint8_t *buff, uint8_t *len)
-{
-    return 0;
-}
-
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
 {
