@@ -59,14 +59,14 @@
 /// Macro to delay 65 us
 #define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0);
 /// Macro to delay 70 us
-#define ADB_DELAY_70 _delay_us(35.0); _delay_us(35.0);
+#define ADB_DELAY_70 _delay_us(30.0); _delay_us(30.0);
 /// Macro to delay 800 us
 #define ADB_DELAY_800 _delay_us(800.0);
 
 /// Output low value
 #define ADB_TX_LOW 0x0
 /// Output high value
-#define ADB_TX_HIGH 0x4
+#define ADB_TX_HIGH 0x1
 
 /// Address of last polled device
 uint8_t last_device;
@@ -86,7 +86,7 @@ uint8_t last_device;
 int8_t adb_txbit(uint8_t bit)
 {
     // Lower line
-    PORTD = ADB_TX_LOW;
+    PORTC = ADB_TX_LOW;
 
     // Delay for: 0 -> 65us, 1 -> 35us
     if (bit == 0) {
@@ -96,7 +96,7 @@ int8_t adb_txbit(uint8_t bit)
     }
 
     // Raise line
-    PORTD = ADB_TX_HIGH;
+    PORTC = ADB_TX_HIGH;
 
     // Delay for: 0 -> 35us, 1 -> 65us
     if (bit == 0) {
@@ -147,10 +147,8 @@ int8_t adb_rx(uint8_t *buff, uint8_t *len)
     //wdt_reset();
     //wdt_disable();
 
-    PORTB = 0xFF;
-
     // Wait for input
-    DDRD = 0x00;
+    //DDRC = 0x00;
 /*
     MCUCR &= ~0x03; // clear int0 config bits
     MCUCR |= 0x02; // trigger on falling edge of int0
@@ -158,6 +156,8 @@ int8_t adb_rx(uint8_t *buff, uint8_t *len)
     _delay_us(200.0); // device usually responds in 150us
     GICR &= ~(1 << 6); // disable int0
 */
+    //ADB_DELAY_800;
+    //DDRC = 0xFF;
 
     return 0;
 }
@@ -165,7 +165,7 @@ int8_t adb_rx(uint8_t *buff, uint8_t *len)
 /// External interrupt 0 vector
 ISR(INT0_vect)
 {
-    PORTB = 0xFE;
+    //PORTB = 0xFE;
 }
 
 /// Send a command packet.
@@ -188,12 +188,14 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     packet |= command << 2;
     packet |= reg;
 
+    DDRC = 0xFF;
+
     // Send attention signal
-    PORTD = ADB_TX_LOW;
+    PORTC = ADB_TX_LOW;
     ADB_DELAY_800;
 
     // Send sync signal
-    PORTD = ADB_TX_HIGH;
+    PORTC = ADB_TX_HIGH;
     ADB_DELAY_70;
 
     // Send command byte
@@ -203,7 +205,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     adb_txbit(0);
 
     // Release line
-    PORTD = ADB_TX_HIGH;
+    PORTC = ADB_TX_HIGH;
 
     return 0;
 }
@@ -212,15 +214,21 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 int8_t adb_init(void)
 {
     // Configure port d for output
-    DDRD = 0xFF;
-    DDRB = 0xFF;
+    DDRC = 0xFF;
+    //DDRB = 0xFF;
 
     // Raise line for idle state
-    PORTD = ADB_TX_HIGH;
+    PORTC = ADB_TX_HIGH;
+    _delay_ms(1000.0);
+    // Reset devices
+    PORTC = ADB_TX_LOW;
+    _delay_ms(4.0);
+    PORTC = ADB_TX_HIGH;
+    
 
-    last_device = 2;
+    last_device = 3;
 
-    GICR &= ~(1 << 6); // disable int0
+    //GICR &= ~(1 << 6); // disable int0
 
     // Enable interrupts
     sei();
@@ -231,11 +239,9 @@ int8_t adb_init(void)
 /// Polls the active device for new data.
 int8_t adb_poll(void)
 {
-    DDRD = 0xFF;
-
     // Send a poll command
     adb_command(last_device, ADB_CMD_TALK, 3);
-    adb_rx(0, 0);
+    //adb_rx(0, 0);
 
     return 0;
 }
