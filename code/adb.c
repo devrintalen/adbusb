@@ -71,6 +71,9 @@
 /// Address of last polled device
 uint8_t last_device;
 
+/// Structure to represent a device
+
+
 /// Send a bit
 /**
     A bit is 100 microseconds long and starts as a low signal and gets set at
@@ -205,6 +208,12 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     return 0;
 }
 
+/// Receive data.
+int8_t adb_rx(uint8_t *buff, uint8_t *len)
+{
+    return 0;
+}
+
 /// Initializes resources used by the ADB host interface.
 int8_t adb_init(void)
 {
@@ -233,6 +242,35 @@ int8_t adb_poll(void)
     // Send a poll command
     adb_command(last_device, ADB_CMD_TALK, 3);
     adb_rx(0, 0);
+
+    return 0;
+}
+
+/// Enumerate all attached devices
+/**
+    Perform an initialization routine that searches for any attached devices
+    and reassigns them to a known address.
+    - Mice will be found at 0x3
+    - Keyboards will be found at 0x2
+    This implementation will start assigning devices to sequential addresses
+    beginning at 0x8 - meaning that only 8 devices are supported.
+*/
+int8_t adb_enumerate(void)
+{
+    uint8_t data[8];
+    uint8_t len = 0;
+
+    // Search for any attached keyboards
+    adb_command(0x3, ADB_CMD_TALK, 3);
+    adb_rx(data, &len);
+    if (len)
+    {
+        // A keyboard has responded and has moved to a random higher address.
+        // This address is returned in data[0]. We now tell that keyboard to
+        // move to an address we want.
+        adb_command(data[0], ADB_CMD_LISTEN, 0);
+        // TODO move keyboard
+    }
 
     return 0;
 }
