@@ -71,9 +71,6 @@
 /// Address of last polled device
 uint8_t last_device;
 
-/// Structure to represent a device
-
-
 /// Send a bit
 /**
     A bit is 100 microseconds long and starts as a low signal and gets set at
@@ -211,27 +208,37 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 }
 
 /// Initializes resources used by the ADB host interface.
+/**
+    This routine initializes the microprocesser resources used by the ADB code
+    and performs the ADB bringup sequence. This consists of:
+
+    -# Raise the line and remain stable for 1s.
+    -# Perform reset pulse for 4ms (spec states 3ms, but actual Mac II
+        hardware will do 4ms).
+    -# Raise line.
+
+    In addition to setting the ADB processor state interrupts will be enabled.
+*/
 int8_t adb_init(void)
 {
-    // Configure port d for output
+    // Configure port for output
     DDRC = 0xFF;
-    //DDRB = 0xFF;
 
-    // Raise line for idle state
+    // Reach steady state then reset devices
+    // TODO this will probably have to change when USB is added.
     PORTC = ADB_TX_HIGH;
     _delay_ms(1000.0);
-    // Reset devices
     PORTC = ADB_TX_LOW;
     _delay_ms(4.0);
     PORTC = ADB_TX_HIGH;
-    
 
+    // Initialize to default mouse address
     last_device = 3;
-
-    //GICR &= ~(1 << 6); // disable int0
 
     // Enable interrupts
     sei();
+
+    //GICR &= ~(1 << 6); // disable int0
 
     return 0;
 }
@@ -241,7 +248,7 @@ int8_t adb_poll(void)
 {
     // Send a poll command
     adb_command(last_device, ADB_CMD_TALK, 3);
-    //adb_rx(0, 0);
+    adb_rx(0, 0);
 
     return 0;
 }
@@ -250,8 +257,10 @@ int8_t adb_poll(void)
 /**
     Perform an initialization routine that searches for any attached devices
     and reassigns them to a known address.
+
     - Mice will be found at 0x3
     - Keyboards will be found at 0x2
+
     This implementation will start assigning devices to sequential addresses
     beginning at 0x8 - meaning that only 8 devices are supported.
 */
