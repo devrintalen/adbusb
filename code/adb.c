@@ -135,6 +135,9 @@ int8_t adb_txbyte(uint8_t command)
     Places the MCU into a receive state and waits for a response. If none is
     given then it will return 1, if it receives data it will fill the given
     buffer with data and return 0.
+
+    @param[in]  buff    Pointer to a buffer that has been allocated.
+    @param[out] len     
 */
 int8_t adb_rx(uint8_t *buff, uint8_t *len)
 {
