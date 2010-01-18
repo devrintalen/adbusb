@@ -79,6 +79,9 @@ uint8_t last_device;
 
     - A 0 is a 65μs low pulse followed by a 35μs high pulse
     - A 1 is a 35μs low pulse followed by a 65μs high pulse
+
+    @param[in]  bit Value to transmit.
+    @return     0 for success.
 */
 int8_t adb_txbit(uint8_t bit)
 {
@@ -108,6 +111,9 @@ int8_t adb_txbit(uint8_t bit)
 /// Send a command byte
 /**
     Just a wrapper to transmit eight bits.
+
+    @param[in]  command 8b value to transmit.
+    @return     0 for success.
 */
 int8_t adb_txbyte(uint8_t command)
 {
@@ -137,7 +143,8 @@ int8_t adb_txbyte(uint8_t command)
     buffer with data and return 0.
 
     @param[in]  buff    Pointer to a buffer that has been allocated.
-    @param[out] len     
+    @param[out] len     Will be set to the number of bits received.
+    @return     0 if data is received, 1 if not.
 */
 int8_t adb_rx(uint8_t *buff, uint8_t *len)
 {
@@ -179,6 +186,11 @@ ISR(INT0_vect)
     -# Send command byte.
     -# Send stop bit.
     -# Release line.
+
+    @param[in]  address Device address.
+    @param[in]  command Command to send.
+    @param[in]  reg     Register to read/write.
+    @return     0 for success.
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
@@ -221,6 +233,8 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     -# Raise line.
 
     In addition to setting the ADB processor state interrupts will be enabled.
+
+    @return 0 for success.
 */
 int8_t adb_init(void)
 {
