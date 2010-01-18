@@ -148,24 +148,6 @@ int8_t adb_txbyte(uint8_t command)
 */
 int8_t adb_rx(uint8_t *buff, uint8_t *len)
 {
-    // Set interrupt on port c to wait for data and watchdog timer for timeout
-    // protection.
-    //wdt_enable(WDTO_15MS);
-    //wdt_reset();
-    //wdt_disable();
-
-    // Wait for input
-    //DDRC = 0x00;
-/*
-    MCUCR &= ~0x03; // clear int0 config bits
-    MCUCR |= 0x02; // trigger on falling edge of int0
-    GICR |= (1 << 6); // enable int0
-    _delay_us(200.0); // device usually responds in 150us
-    GICR &= ~(1 << 6); // disable int0
-*/
-    //ADB_DELAY_800;
-    //DDRC = 0xFF;
-
     return 0;
 }
 
