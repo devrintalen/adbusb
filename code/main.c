@@ -33,12 +33,14 @@
 */
 int main(void)
 {
+    uint8_t adb_buff[8];
+    uint8_t adb_len;
     adb_init();
 
     while(1)
     {
         _delay_ms(1.0);
-        adb_poll();
+        adb_poll(adb_buff, &adb_len);
     }
 
     return 0;
