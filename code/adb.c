@@ -22,13 +22,6 @@
 
 #include <stdint.h>
 #include <avr/io.h>
-/// Clock speed must be defined for delay.h
-/**
-    With a clock at 16MHz the maximum time that can be delayed is:
-    - for μs: \f$768/16 = 48\f$
-    - for ms: \f$262.14/16 = 16.38\f$
-*/
-//#define F_CPU 16000000UL
 #include <util/delay.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
@@ -328,6 +321,7 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
     {
         *len = rx_len;
         memcpy((void*)buff, (void*)rx_buff, 8);
+        return 1;
     }
 
     return 0;
