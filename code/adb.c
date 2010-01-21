@@ -21,6 +21,7 @@
 */
 
 #include <stdint.h>
+#include <string.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/wdt.h>
@@ -55,6 +56,8 @@
 #define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0);
 /// Macro to delay 70 us
 #define ADB_DELAY_70 _delay_us(30.0); _delay_us(30.0);
+/// Macro to delay 200 us
+#define ADB_DELAY_200 _delay_us(200.0);
 /// Macro to delay 800 us
 #define ADB_DELAY_800 _delay_us(800.0);
 
@@ -182,7 +185,7 @@ ISR(INT0_vect)
     // Wake every 50us and record the data line state. Every 2nd time we will
     // see the bit value transmitted. When the first value of a pair is 1 the
     // device has stopped sending data.
-    bool receiving = 1;
+    uint8_t receiving = 1;
     uint8_t byte = 0;
     while(receiving)
     {

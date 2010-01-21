@@ -26,11 +26,11 @@
 void uart_init(void)
 {
     UBRRL = 103; // 9600 baud
-    UCSRB = _BV(RXEN); // enable rx
+    UCSRB = _BV(TXEN); // enable rx
 }
 
 /// Send a single character on the UART.
-uint8_t uart_putchar(char c, FILE *stream)
+int uart_putchar(char c, FILE *stream)
 {
     if (c == '\n')
         uart_putchar('\r', stream);

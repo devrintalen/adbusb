@@ -18,6 +18,6 @@
     \brief Global routines for the ADB interface.
 */
 
-int8_t adb_poll(void);
+int8_t adb_poll(uint8_t *buff, uint8_t *len);
 int8_t adb_init(void);
 
