@@ -178,7 +178,15 @@ int8_t adb_rx()
 
     // Return 0 if we received data
     if (adb_rx_len > 0)
+    {
+        // Debug code here
+        DDRB = 0xFF;
+        PORTB = ~adb_rx_len;
+        _delay_ms(1000.0);
+        PORTB = 0xFF;
+        while(1) ;
         return 0;
+    }
     else
         return 1;
 }
