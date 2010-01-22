@@ -68,13 +68,10 @@
 
 /// Address of last polled device
 uint8_t last_device;
-/// Received data buffer
-/**
-    A device may respond with 2 to 8 bytes of data.
-*/
-uint8_t rx_buff[8];
+/// Received data buffer (2-8 bytes)
+uint8_t adb_rx_buff[8];
 /// Received data length (in bits)
-uint8_t rx_len;
+uint8_t adb_rx_len;
 
 /// Send a bit
 /**
@@ -147,27 +144,40 @@ int8_t adb_txbyte(uint8_t command)
     given then it will return 1, if it receives data it will fill the global
     buffer with data and return 0.
 
+    This function will wait for 240us to receive data before it returns. After
+    160us it enables the external interrupt to catch a response from the
+    device. If and when this interrupt gets triggered it will begin a series of
+    timers to record the data. The external interrupt will be reconfigured to
+    watch for the rising edge. When this gets hit it will read the
+    timer/counter to determine if it received a 0 or 1 (65us for a 0, 35us for
+    a 1). The timer will interrupt at 100us intervals. If the timer fires and
+    no bit was recorded during the 100us it will signal the end of the receive.
+
     @return     0 if data is received, 1 if not.
 */
 int8_t adb_rx()
 {
     // Initialize resources
-    rx_len = 0;
-    memset((void*)rx_buff, 0, 8);
+    adb_rx_len = 0;
+    memset((void*)adb_rx_buff, 0, 8);
+
+    // Wait for 160us before receiving data.
+    ADB_DELAY_160;
 
     // Enable external interrupt on data line (int0)
-    GICR |= (1 << 6);
+    GICR |= _BV(INT0);
 
-    // Wait for 200us for device to respond. If it does it will enter the int0
-    // handler, receive the data, and return here. If not, we'll notice that
-    // len is still 0.
-    ADB_DELAY_200;
+    // Wait for 80us for device to respond. If it does it will enter the int0
+    // handler, receive the data, and return here. If the receiving data flag
+    // is high then this will continue to wait.
+    ADB_DELAY_80;
+    while(adb_rx) ;
 
     // Disable external interrupt on data line (int0)
-    GICR &= ~(1 << 6);
+    GICR &= ~_BV(INT0);
 
     // Return 0 if we received data
-    if (rx_len > 0)
+    if (adb_rx_len > 0)
         return 0;
     else
         return 1;
@@ -175,42 +185,57 @@ int8_t adb_rx()
 
 /// External interrupt 0 vector
 /**
-    This gets triggered when the MCU begins receiving data from the device.
+    This gets triggered under two conditions:
+
+    -# The MCU begins receiving data from the device. If this is the case it
+    should reconfigure to trigger on the rising edge for the next condition:
+    -# Device has transmitted a bit.
 */
 ISR(INT0_vect)
 {
-    // Disable interrupt to prevent it from firing again.
-    GICR &= ~(1 << 6);
-
-    // Wake every 50us and record the data line state. Every 2nd time we will
-    // see the bit value transmitted. When the first value of a pair is 1 the
-    // device has stopped sending data.
-    uint8_t receiving = 1;
-    uint8_t byte = 0;
-    while(receiving)
+    if (!adb_rx)
     {
-        // Grab first value of pair
-        if (PINC == 1)
-        {
-            receiving = 0;
-            continue;
-        }
-        ADB_DELAY_50;
-
-        // Grab second (data) value of pair
-        byte = (byte << 1) | PINC;
-        rx_len++;
-
-        // Every 8 bits copy the temporary byte value into the buffer at the
-        // next byte position.
-        if (rx_len % 8 == 0)
-        {
-            rx_buff[(rx_len / 8) - 1] = byte;
-            byte = 0;
-        }
-        ADB_DELAY_50;
+        adb_rx = true;
+        MCUCR = 3; // Generate interrupt on rising edge
+        TCCR0 |= _BV(WGM01) | _BV(CS01); // CTC, clk/8
+        OCR0 = 99; // Generate interrupt every 100us
+        return;
     }
 
+    // At this point we know we are in the middle of receiving data. Compare
+    // the value of timer0 to 50 to see if if we just received a 0 or 1. Set
+    // the bit flag to indicate we received a bit.
+    adb_rx_data = true;
+    if (TCNT0 < foo)
+        adb_rx_bit = 0;
+    else
+        adb_rx_bit = 1;
+
+    return;
+}
+
+/// Timer0 compare interrupt
+/**
+    This is triggered during a receive sequence every 100us. It will check to
+    make sure a bit was received (rx_data flag) and what the value was
+    (rx_bit) and add it to the buffer. If a bit was not received (rx_data is
+    clear) then the device has stopped sending data and the receive sequence
+    should be ended.
+*/
+ISR(TIMER0_COMP_vect)
+{
+    if (!adb_rx_data)
+    {
+        adb_rx = false;
+        TCCR0 = 0; // Disable timer0
+        return;
+    }
+
+    // Increment the bit counter and store the bit received into the buffer.
+    adb_rx_len++;
+    adb_rx_buff[adb_rx_len / 8] = (adb_rx_buff[adb_rx_len / 8] << 1) | rx_bit;
+
+    adb_rx_data = false;
     return;
 }
 
@@ -322,8 +347,8 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
     // and return the correct length.
     if (adb_rx() == 0)
     {
-        *len = rx_len;
-        memcpy((void*)buff, (void*)rx_buff, 8);
+        *len = adb_rx_len;
+        memcpy((void*)buff, (void*)adb_rx_buff, 8);
         return 1;
     }
 
