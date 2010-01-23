@@ -354,6 +354,10 @@ int8_t adb_init(void)
 */
 int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
+    DDRA = 0xFF;
+    PORTA = 0x1;
+    PORTA = 0x0;
+
     // Initialize length
     *len = 0;
 
