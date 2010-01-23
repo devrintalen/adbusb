@@ -55,6 +55,10 @@
 #define ADB_DELAY_65 _delay_us(35.0); _delay_us(30.0);
 /// Macro to delay 70 us
 #define ADB_DELAY_70 _delay_us(30.0); _delay_us(30.0);
+/// Macro to delay 80 us
+#define ADB_DELAY_80 _delay_us(40.0); _delay_us(40.0);
+/// Macro to delay 160 us
+#define ADB_DELAY_160 ADB_DELAY_80; ADB_DELAY_80;
 /// Macro to delay 200 us
 #define ADB_DELAY_200 _delay_us(200.0);
 /// Macro to delay 800 us
@@ -71,6 +75,10 @@ uint8_t last_device;
 uint8_t adb_rx_buff[8];
 /// Received data length (in bits)
 uint8_t adb_rx_len;
+/// Receiving data flag
+uint8_t adb_rx_inprogress;
+/// Current received bit
+int8_t adb_rx_bit;
 
 /// Send a bit
 /**
@@ -170,7 +178,7 @@ int8_t adb_rx()
     // handler, receive the data, and return here. If the receiving data flag
     // is high then this will continue to wait.
     ADB_DELAY_80;
-    while(adb_rx) ;
+    while(adb_rx_inprogress) ;
 
     // Disable external interrupt on data line (int0)
     GICR &= ~_BV(INT0);
@@ -200,9 +208,10 @@ int8_t adb_rx()
 */
 ISR(INT0_vect)
 {
-    if (!adb_rx)
+    if (!adb_rx_inprogress)
     {
-        adb_rx = true;
+        adb_rx_inprogress = 1;
+        adb_rx_bit = -1;
         MCUCR = 3; // Generate interrupt on rising edge
         TCCR0 |= _BV(WGM01) | _BV(CS01); // CTC, clk/8
         OCR0 = 99; // Generate interrupt every 100us
@@ -210,9 +219,7 @@ ISR(INT0_vect)
     }
 
     // At this point we know we are in the middle of receiving data. Compare
-    // the value of timer0 to 50 to see if if we just received a 0 or 1. Set
-    // the bit flag to indicate we received a bit.
-    adb_rx_data = true;
+    // the value of timer0 to 50 to see if if we just received a 0 or 1.
     if (TCNT0 < 50)
         adb_rx_bit = 1;
     else
@@ -231,9 +238,9 @@ ISR(INT0_vect)
 */
 ISR(TIMER0_COMP_vect)
 {
-    if (!adb_rx_data)
+    if (adb_rx_bit == -1)
     {
-        adb_rx = false;
+        adb_rx_inprogress = 0;
         TCCR0 = 0; // Disable timer0
         return;
     }
@@ -241,10 +248,10 @@ ISR(TIMER0_COMP_vect)
     // Increment the bit counter and store the bit received into the buffer.
     adb_rx_len++;
     uint8_t i = adb_rx_len / 8;
-    adb_rx_buff[i] = (adb_rx_buff[i] << 1) | rx_bit;
+    adb_rx_buff[i] = (adb_rx_buff[i] << 1) | adb_rx_bit;
 
-    // Clear bit received flag for next iteration
-    adb_rx_data = false;
+    // Clear bit received for next iteration
+    adb_rx_bit = -1;
 
     return;
 }
