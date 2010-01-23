@@ -24,7 +24,6 @@
 #include <string.h>
 #include <avr/io.h>
 #include <util/delay.h>
-#include <avr/wdt.h>
 #include <avr/interrupt.h>
 
 #include "adb.h"
@@ -214,10 +213,10 @@ ISR(INT0_vect)
     // the value of timer0 to 50 to see if if we just received a 0 or 1. Set
     // the bit flag to indicate we received a bit.
     adb_rx_data = true;
-    if (TCNT0 < foo)
-        adb_rx_bit = 0;
-    else
+    if (TCNT0 < 50)
         adb_rx_bit = 1;
+    else
+        adb_rx_bit = 0;
 
     return;
 }
@@ -241,9 +240,12 @@ ISR(TIMER0_COMP_vect)
 
     // Increment the bit counter and store the bit received into the buffer.
     adb_rx_len++;
-    adb_rx_buff[adb_rx_len / 8] = (adb_rx_buff[adb_rx_len / 8] << 1) | rx_bit;
+    uint8_t i = adb_rx_len / 8;
+    adb_rx_buff[i] = (adb_rx_buff[i] << 1) | rx_bit;
 
+    // Clear bit received flag for next iteration
     adb_rx_data = false;
+
     return;
 }
 
