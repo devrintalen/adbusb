@@ -67,7 +67,7 @@
 /// Output low value
 #define ADB_TX_LOW 0x0
 /// Output high value
-#define ADB_TX_HIGH 0x1
+#define ADB_TX_HIGH 0x4
 
 /// Address of last polled device
 uint8_t last_device;
@@ -95,7 +95,7 @@ int8_t adb_rx_bit;
 int8_t adb_txbit(uint8_t bit)
 {
     // Lower line
-    PORTC = ADB_TX_LOW;
+    PORTD = ADB_TX_LOW;
 
     // Delay for: 0 -> 65us, 1 -> 35us
     if (bit == 0) {
@@ -105,7 +105,7 @@ int8_t adb_txbit(uint8_t bit)
     }
 
     // Raise line
-    PORTC = ADB_TX_HIGH;
+    PORTD = ADB_TX_HIGH;
 
     // Delay for: 0 -> 35us, 1 -> 65us
     if (bit == 0) {
@@ -172,11 +172,14 @@ int8_t adb_rx()
     ADB_DELAY_160;
 
     // Enable external interrupt on data line (int0)
+    MCUCR &= ~(_BV(ISC01) | _BV(ISC00));
+    MCUCR |= _BV(ISC01);
     GICR |= _BV(INT0);
 
     // Wait for 80us for device to respond. If it does it will enter the int0
     // handler, receive the data, and return here. If the receiving data flag
     // is high then this will continue to wait.
+    adb_rx_inprogress = 0;
     ADB_DELAY_80;
     while(adb_rx_inprogress) ;
 
@@ -185,15 +188,7 @@ int8_t adb_rx()
 
     // Return 0 if we received data
     if (adb_rx_len > 0)
-    {
-        // Debug code here
-        DDRB = 0xFF;
-        PORTB = ~adb_rx_len;
-        _delay_ms(1000.0);
-        PORTB = 0xFF;
-        while(1) ;
         return 0;
-    }
     else
         return 1;
 }
@@ -210,6 +205,7 @@ ISR(INT0_vect)
 {
     if (!adb_rx_inprogress)
     {
+        PORTA = 0x2;
         adb_rx_inprogress = 1;
         adb_rx_bit = -1;
         MCUCR = 3; // Generate interrupt on rising edge
@@ -281,14 +277,12 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     packet |= command << 2;
     packet |= reg;
 
-    DDRC = 0xFF;
-
     // Send attention signal
-    PORTC = ADB_TX_LOW;
+    PORTD = ADB_TX_LOW;
     ADB_DELAY_800;
 
     // Send sync signal
-    PORTC = ADB_TX_HIGH;
+    PORTD = ADB_TX_HIGH;
     ADB_DELAY_70;
 
     // Send command byte
@@ -298,7 +292,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     adb_txbit(0);
 
     // Release line
-    PORTC = ADB_TX_HIGH;
+    PORTD = ADB_TX_HIGH;
 
     return 0;
 }
@@ -320,15 +314,15 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 int8_t adb_init(void)
 {
     // Configure port for output
-    DDRC = 0xFF;
+    DDRD = 0xFF;
 
     // Reach steady state then reset devices
     // TODO this will probably have to change when USB is added.
-    PORTC = ADB_TX_HIGH;
+    PORTD = ADB_TX_HIGH;
     _delay_ms(1000.0);
-    PORTC = ADB_TX_LOW;
+    PORTD = ADB_TX_LOW;
     _delay_ms(4.0);
-    PORTC = ADB_TX_HIGH;
+    PORTD = ADB_TX_HIGH;
 
     // Initialize to default mouse address
     last_device = 3;
@@ -356,6 +350,7 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
     DDRA = 0xFF;
     PORTA = 0x1;
+    _delay_us(100.0);
     PORTA = 0x0;
 
     // Initialize length
