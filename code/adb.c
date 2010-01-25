@@ -169,9 +169,9 @@ int8_t adb_rx()
     memset((void*)adb_rx_buff, 0, 8);
 
     // Wait for 160us before receiving data.
-    ADB_DELAY_160;
+    //ADB_DELAY_160;
 
-    // Enable external interrupt on data line (int0)
+    // Enable external interrupt on data line (int0) for falling edge
     MCUCR &= ~(_BV(ISC01) | _BV(ISC00));
     MCUCR |= _BV(ISC01);
     GICR |= _BV(INT0);
@@ -179,16 +179,21 @@ int8_t adb_rx()
     // Wait for 80us for device to respond. If it does it will enter the int0
     // handler, receive the data, and return here. If the receiving data flag
     // is high then this will continue to wait.
+    PORTA = 0x2;
     adb_rx_inprogress = 0;
     ADB_DELAY_80;
     while(adb_rx_inprogress) ;
+    PORTA = 0x2;
 
     // Disable external interrupt on data line (int0)
     GICR &= ~_BV(INT0);
 
     // Return 0 if we received data
     if (adb_rx_len > 0)
+    {
+        PORTA = adb_rx_len;
         return 0;
+    }
     else
         return 1;
 }
@@ -205,12 +210,15 @@ ISR(INT0_vect)
 {
     if (!adb_rx_inprogress)
     {
-        PORTA = 0x2;
+        PORTA = 0x4;
         adb_rx_inprogress = 1;
-        adb_rx_bit = -1;
-        MCUCR = 3; // Generate interrupt on rising edge
+        adb_rx_bit = 0;
+        MCUCR |= _BV(ISC00); // Generate interrupt on rising edge
+        TCCR0 = 0; // Clear timer0 settings
         TCCR0 |= _BV(WGM01) | _BV(CS01); // CTC, clk/8
-        OCR0 = 99; // Generate interrupt every 100us
+        TCNT0 = 0; // Clear timer count
+        OCR0 = 99; // Count to 100us
+        TIMSK |= _BV(OCIE0); // Enable timer0 interrupt
         return;
     }
 
@@ -236,8 +244,9 @@ ISR(TIMER0_COMP_vect)
 {
     if (adb_rx_bit == -1)
     {
+        PORTA = 0x6;
         adb_rx_inprogress = 0;
-        TCCR0 = 0; // Disable timer0
+        TIMSK &= ~_BV(OCIE0); // Disable timer0 interrupt
         return;
     }
 
