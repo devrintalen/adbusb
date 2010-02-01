@@ -20,6 +20,7 @@
     This file contains global routines and interrupts.
 */
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <util/delay.h>
 #include "adb.h"

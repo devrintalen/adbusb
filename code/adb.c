@@ -20,8 +20,10 @@
     Defines routines and interrupts specific to the ADB interface.
 */
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
@@ -153,33 +155,64 @@ int8_t adb_txbyte(uint8_t command)
 int8_t adb_rx()
 {
     uint8_t delay = 240;
-    // States:
-    // 0: Waiting for first bit
-    // 1: Receiving a bit
-    // 2: Done receiving a bit, waiting for next falling edge
-    // 3: Done receiving all data
-    uint8_t state = 0;
+    uint8_t receiving = 0;
     uint8_t ticks = 0;
 
     // Begin a busy-wait loop to delay for up to 240us. If the data line drops
     // low during this time then begin receiving data.
+    uint8_t last_bit;
+    uint8_t bit_count = 0;
+    uint8_t buffer[8];
+
+    PORTA = 0x2;
     while(delay)
     {
         _delay_us(1.0);
         delay--;
-        if (bit_is_clear(PORTC, 2))
-        {
-            // begin rx loop
+        if (bit_is_clear(PIND, 2)) {
+            receiving = 1;
+            PORTA = 0x4;
             break;
         }
     }
 
-    // Return 0 if we received data
-    if (adb_rx_len > 0)
+    while(receiving)
     {
-        PORTA = adb_rx_len;
-        return 0;
+        ticks = 0;
+        while(bit_is_clear(PIND, 2)) {
+            ticks++;
+        }
+        PORTA = ticks;
+        while(1) {};
+        if (ticks > 40) {
+            last_bit = 0;
+        } else {
+            last_bit = 1;
+        }
+
+        bit_count++;
+        uint8_t i = bit_count / 8;
+        assert(i <= 8);
+        buffer[i] = (buffer[i] << 1) | last_bit;
+
+        uint8_t remaining = 80 - ticks;
+        ticks = 0;
+        PORTA = 0xC;
+        while(bit_is_set(PIND, 2) && (ticks < remaining)) {
+            ticks++;
+            _delay_us(1.0);
+        }
+
+        if (ticks == 1) {
+            receiving = 0;
+        }
     }
+
+    PORTA = 0x2;
+
+    // Return 0 if we received data
+    if (bit_count)
+        return 0;
     else
         return 1;
 }
@@ -261,10 +294,6 @@ int8_t adb_init(void)
 
     // Enable interrupts
     sei();
-
-    // External interrupt on falling edge of int0
-    MCUCR = 2;
-    GICR &= ~(1 << 6); // disable interrupt for now
 
     return 0;
 }
