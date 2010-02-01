@@ -147,46 +147,32 @@ int8_t adb_txbyte(uint8_t command)
 
 /// Receive a data packet.
 /**
-    Places the MCU into a receive state and waits for a response. If none is
-    given then it will return 1, if it receives data it will fill the global
-    buffer with data and return 0.
-
-    This function will wait for 240us to receive data before it returns. After
-    160us it enables the external interrupt to catch a response from the
-    device. If and when this interrupt gets triggered it will begin a series of
-    timers to record the data. The external interrupt will be reconfigured to
-    watch for the rising edge. When this gets hit it will read the
-    timer/counter to determine if it received a 0 or 1 (65us for a 0, 35us for
-    a 1). The timer will interrupt at 100us intervals. If the timer fires and
-    no bit was recorded during the 100us it will signal the end of the receive.
 
     @return     0 if data is received, 1 if not.
 */
 int8_t adb_rx()
 {
-    // Initialize resources
-    adb_rx_len = 0;
-    memset((void*)adb_rx_buff, 0, 8);
+    uint8_t delay = 240;
+    // States:
+    // 0: Waiting for first bit
+    // 1: Receiving a bit
+    // 2: Done receiving a bit, waiting for next falling edge
+    // 3: Done receiving all data
+    uint8_t state = 0;
+    uint8_t ticks = 0;
 
-    // Wait for 160us before receiving data.
-    //ADB_DELAY_160;
-
-    // Enable external interrupt on data line (int0) for falling edge
-    MCUCR &= ~(_BV(ISC01) | _BV(ISC00));
-    MCUCR |= _BV(ISC01);
-    GICR |= _BV(INT0);
-
-    // Wait for 80us for device to respond. If it does it will enter the int0
-    // handler, receive the data, and return here. If the receiving data flag
-    // is high then this will continue to wait.
-    PORTA = 0x2;
-    adb_rx_inprogress = 0;
-    ADB_DELAY_80;
-    while(adb_rx_inprogress) ;
-    PORTA = 0x2;
-
-    // Disable external interrupt on data line (int0)
-    GICR &= ~_BV(INT0);
+    // Begin a busy-wait loop to delay for up to 240us. If the data line drops
+    // low during this time then begin receiving data.
+    while(delay)
+    {
+        _delay_us(1.0);
+        delay--;
+        if (bit_is_clear(PORTC, 2))
+        {
+            // begin rx loop
+            break;
+        }
+    }
 
     // Return 0 if we received data
     if (adb_rx_len > 0)
@@ -196,69 +182,6 @@ int8_t adb_rx()
     }
     else
         return 1;
-}
-
-/// External interrupt 0 vector
-/**
-    This gets triggered under two conditions:
-
-    -# The MCU begins receiving data from the device. If this is the case it
-    should reconfigure to trigger on the rising edge for the next condition:
-    -# Device has transmitted a bit.
-*/
-ISR(INT0_vect)
-{
-    if (!adb_rx_inprogress)
-    {
-        PORTA = 0x4;
-        adb_rx_inprogress = 1;
-        adb_rx_bit = 0;
-        MCUCR |= _BV(ISC00); // Generate interrupt on rising edge
-        TCCR0 = 0; // Clear timer0 settings
-        TCCR0 |= _BV(WGM01) | _BV(CS01); // CTC, clk/8
-        TCNT0 = 0; // Clear timer count
-        OCR0 = 99; // Count to 100us
-        TIMSK |= _BV(OCIE0); // Enable timer0 interrupt
-        return;
-    }
-
-    // At this point we know we are in the middle of receiving data. Compare
-    // the value of timer0 to 50 to see if if we just received a 0 or 1.
-    if (TCNT0 < 50)
-        adb_rx_bit = 1;
-    else
-        adb_rx_bit = 0;
-
-    return;
-}
-
-/// Timer0 compare interrupt
-/**
-    This is triggered during a receive sequence every 100us. It will check to
-    make sure a bit was received (rx_data flag) and what the value was
-    (rx_bit) and add it to the buffer. If a bit was not received (rx_data is
-    clear) then the device has stopped sending data and the receive sequence
-    should be ended.
-*/
-ISR(TIMER0_COMP_vect)
-{
-    if (adb_rx_bit == -1)
-    {
-        PORTA = 0x6;
-        adb_rx_inprogress = 0;
-        TIMSK &= ~_BV(OCIE0); // Disable timer0 interrupt
-        return;
-    }
-
-    // Increment the bit counter and store the bit received into the buffer.
-    adb_rx_len++;
-    uint8_t i = adb_rx_len / 8;
-    adb_rx_buff[i] = (adb_rx_buff[i] << 1) | adb_rx_bit;
-
-    // Clear bit received for next iteration
-    adb_rx_bit = -1;
-
-    return;
 }
 
 /// Send a command packet.
