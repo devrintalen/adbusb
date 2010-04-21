@@ -167,7 +167,7 @@ int8_t adb_rx()
     PORTA = 0x2;
     while(delay)
     {
-        _delay_us(1.0);
+        //_delay_us(1.0);
         delay--;
         if (bit_is_clear(PIND, 2)) {
             receiving = 1;
@@ -176,31 +176,45 @@ int8_t adb_rx()
         }
     }
 
+    // In the interest of speed the following code doesn't use any _delay()
+    // macros to keep things rolling. Instead we use while() loops with the
+    // ticks variable to count things. Based on some measurements a tick takes
+    // about 4.3us.
     while(receiving)
     {
+        PORTA = 0x6;
         ticks = 0;
         while(bit_is_clear(PIND, 2)) {
             ticks++;
         }
-        PORTA = ticks;
-        while(1) {};
-        if (ticks > 40) {
+
+        // Based on the length of the low portion of the bit we know if it's a
+        // 0 or 1. A 0 will be 30us (7 ticks) or lower, a 1 will be 45us
+        // (10 ticks) or higher.
+        if (ticks > 9) {
             last_bit = 0;
         } else {
             last_bit = 1;
         }
+        PORTA = last_bit;
 
+        // Store the bit into the buffer
         bit_count++;
         uint8_t i = bit_count / 8;
         assert(i <= 8);
         buffer[i] = (buffer[i] << 1) | last_bit;
+        PORTA = 0x4;
 
-        uint8_t remaining = 80 - ticks;
+        // Delay for a portion of the remaining ticks; just enough to ensure
+        // that we will be in the high portion of the bit so we can then watch
+        // for the high->low transition to start the next bit. Given that a
+        // tick is about 4.3us there are about 18 ticks per 80us (duration of
+        // a bit)
+        int8_t remaining = 15 - ticks;
         ticks = 0;
-        PORTA = 0xC;
-        while(bit_is_set(PIND, 2) && (ticks < remaining)) {
+        //while(bit_is_set(PIND, 2) && (ticks < remaining)) {
+        while(bit_is_set(PIND, 2)) {
             ticks++;
-            _delay_us(1.0);
         }
 
         if (ticks == 1) {
