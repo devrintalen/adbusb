@@ -189,9 +189,9 @@ int8_t adb_rx()
         }
 
         // Based on the length of the low portion of the bit we know if it's a
-        // 0 or 1. A 0 will be 30us (7 ticks) or lower, a 1 will be 45us
+        // 0 or 1. A 1 will be 30us (7 ticks) or lower, a 0 will be 45us
         // (10 ticks) or higher.
-        if (ticks > 9) {
+        if (ticks > 8) {
             last_bit = 0;
         } else {
             last_bit = 1;
@@ -210,14 +210,14 @@ int8_t adb_rx()
         // for the high->low transition to start the next bit. Given that a
         // tick is about 4.3us there are about 18 ticks per 80us (duration of
         // a bit)
-        int8_t remaining = 15 - ticks;
+        //int8_t remaining = 15 - ticks;
+        int8_t remaining = 25;
         ticks = 0;
-        //while(bit_is_set(PIND, 2) && (ticks < remaining)) {
-        while(bit_is_set(PIND, 2)) {
+        while(bit_is_set(PIND, 2) && (ticks < remaining)) {
             ticks++;
         }
 
-        if (ticks == 1) {
+        if (ticks == remaining) {
             receiving = 0;
         }
     }
