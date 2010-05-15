@@ -26,7 +26,7 @@
 void uart_init(void)
 {
     UBRRL = 103; // 9600 baud
-    UCSRB = _BV(TXEN); // enable rx
+    UCSRB = _BV(TXEN); // enable tx
 }
 
 /// Send a single character on the UART.
