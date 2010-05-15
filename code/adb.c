@@ -189,8 +189,8 @@ int8_t adb_rx()
         }
 
         // Based on the length of the low portion of the bit we know if it's a
-        // 0 or 1. A 1 will be 30us (7 ticks) or lower, a 0 will be 45us
-        // (10 ticks) or higher.
+        // 0 or 1. A 1 will be 30us (~8 ticks) or lower, a 0 will be 45us
+        // (~10 ticks) or higher. This code seems to work.
         if (ticks > 8) {
             last_bit = 0;
         } else {
