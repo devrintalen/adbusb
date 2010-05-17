@@ -1,5 +1,5 @@
 AVR = atmega32
-OBJECTS=main.o adb.o
+OBJECTS=main.o adb.o uart.o
 
 CC=avr-gcc
 CFLAGS=-Wall -g -O2 -mmcu=$(AVR) -D F_CPU=980000UL
