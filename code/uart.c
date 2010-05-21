@@ -21,21 +21,24 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <avr/io.h>
+#include <util/delay.h>
 
 /// Initialize driver resources
 void uart_init(void)
 {
     UBRRL = 103; // 9600 baud
     UCSRB = _BV(TXEN); // enable tx
+    //UCSRC |= _BV(URSEL) | _BV(UCSZ1) | _BV(UCSZ0);
 }
 
 /// Send a single character on the UART.
 int uart_putchar(char c, FILE *stream)
 {
-    if (c == '\n')
-        uart_putchar('\r', stream);
+//    if (c == '\n')
+ //       uart_putchar('\r', stream);
 
-    loop_until_bit_is_set(UCSRA, UDRE);
+    //loop_until_bit_is_set(UCSRA, UDRE);
+    _delay_ms(1.0);
     UDR = c;
 
     return 0;

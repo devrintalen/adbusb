@@ -37,16 +37,17 @@ static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 */
 int main(void)
 {
-    uint8_t adb_buff[8];
-    uint8_t adb_len;
+    //uint8_t adb_buff[8];
+    //uint8_t adb_len;
     //adb_init();
 
     uart_init();
     stdout = &uart_str;
     
-    printf("Hello world!\n");
+    //printf("Hello world!\n");
+    uart_putchar('c', NULL);
 
-    while(1)
+    while(0)
     {
         _delay_ms(1.0);
 
