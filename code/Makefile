@@ -20,5 +20,8 @@ all: $(OBJECTS)
 install: main.hex
 	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U flash:w:main.hex
 
+fixfuse:
+	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U lfuse:w:0b11100000:m
+	
 clean:
 	rm -f *.o *.elf *.hex a.out
