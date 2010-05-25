@@ -44,8 +44,7 @@ int main(void)
     uart_init();
     stdout = &uart_str;
     
-    //printf("Hello world!\n");
-    uart_putchar('c', NULL);
+    printf("Hello world!\n");
 
     while(0)
     {

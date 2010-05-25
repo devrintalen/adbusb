@@ -34,11 +34,10 @@ void uart_init(void)
 /// Send a single character on the UART.
 int uart_putchar(char c, FILE *stream)
 {
-//    if (c == '\n')
- //       uart_putchar('\r', stream);
+    if (c == '\n')
+        uart_putchar('\r', stream);
 
-    //loop_until_bit_is_set(UCSRA, UDRE);
-    _delay_ms(1.0);
+    loop_until_bit_is_set(UCSRA, UDRE);
     UDR = c;
 
     return 0;
