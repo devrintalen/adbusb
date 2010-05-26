@@ -39,9 +39,10 @@ static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 */
 int main(void)
 {
-    //uint8_t adb_buff[8];
-    //uint8_t adb_len;
-    //adb_init();
+    uint8_t adb_buff[8];
+    uint8_t adb_len;
+    uint8_t status, i;
+    adb_init();
 
     uart_init();
     stdout = &uart_str;
@@ -52,15 +53,15 @@ int main(void)
     {
         _delay_ms(1.0);
 
-        //status = adb_poll(adb_buff, &adb_len);
-        //if (status == 0)
-        //{
-        //    printf("-- %02d bits. data = ", adb_len);
-        //    for(i=0; i<8; i++) {
-        //        printf("%02x", adb_buff[i]);
-        //    }
-        //    printf("\n");
-        //}
+        status = adb_poll(adb_buff, &adb_len);
+        if (status == 0)
+        {
+            printf("-- %02d bits. data = ", adb_len);
+            for(i=0; i<8; i++) {
+                printf("%02x", adb_buff[i]);
+            }
+            printf("\n");
+        }
     }
 
     return 0;
