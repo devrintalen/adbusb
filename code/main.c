@@ -26,6 +26,7 @@
 #include "adb.h"
 #include "uart.h"
 
+/// File handle to UART device
 static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 /// Reset entry point.
