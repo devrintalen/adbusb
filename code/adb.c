@@ -171,7 +171,7 @@ int8_t adb_rx()
     PORTA = 0x2;
     while(delay)
     {
-        //_delay_us(1.0);
+        _delay_us(1.0);
         delay--;
         if (bit_is_clear(ADB_PIN, 2)) {
             receiving = 1;
@@ -189,35 +189,34 @@ int8_t adb_rx()
         PORTA = 0x6;
         ticks = 0;
         while(bit_is_clear(ADB_PIN, 2)) {
+            _delay_us(1.0);
             ticks++;
         }
 
         // Based on the length of the low portion of the bit we know if it's a
         // 0 or 1. A 1 will be 30us (~8 ticks) or lower, a 0 will be 45us
         // (~10 ticks) or higher. This code seems to work.
-        if (ticks > 8) {
+        if (ticks > 40) {
             last_bit = 0;
         } else {
             last_bit = 1;
         }
-        PORTA = last_bit;
 
         // Store the bit into the buffer
         bit_count++;
         uint8_t i = bit_count / 8;
         assert(i <= 8);
         buffer[i] = (buffer[i] << 1) | last_bit;
-        PORTA = 0x4;
 
         // Delay for a portion of the remaining ticks; just enough to ensure
         // that we will be in the high portion of the bit so we can then watch
         // for the high->low transition to start the next bit. Given that a
         // tick is about 4.3us there are about 18 ticks per 80us (duration of
         // a bit)
-        //int8_t remaining = 15 - ticks;
-        int8_t remaining = 25;
+        int8_t remaining = 80 - ticks;
         ticks = 0;
         while(bit_is_set(ADB_PIN, 2) && (ticks < remaining)) {
+            _delay_us(1.0);
             ticks++;
         }
 
