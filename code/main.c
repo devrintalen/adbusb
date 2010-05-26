@@ -41,27 +41,15 @@ int main(void)
 {
     uint8_t adb_buff[8];
     uint8_t adb_len;
-    uint8_t status, i;
     adb_init();
 
     uart_init();
     stdout = &uart_str;
     
-    printf("Hello world!\n");
-
     while(0)
     {
         _delay_ms(1.0);
-
-        status = adb_poll(adb_buff, &adb_len);
-        if (status == 0)
-        {
-            printf("-- %02d bits. data = ", adb_len);
-            for(i=0; i<8; i++) {
-                printf("%02x", adb_buff[i]);
-            }
-            printf("\n");
-        }
+        adb_poll(adb_buff, &adb_len);
     }
 
     return 0;
