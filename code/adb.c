@@ -66,6 +66,10 @@
 /// Macro to delay 800 us
 #define ADB_DELAY_800 _delay_us(800.0);
 
+/// Output port
+#define ADB_PORT PORTB
+/// Input pin
+#define ADB_PIN PINB
 /// Output low value
 #define ADB_TX_LOW 0x0
 /// Output high value
@@ -97,7 +101,7 @@ int8_t adb_rx_bit;
 int8_t adb_txbit(uint8_t bit)
 {
     // Lower line
-    PORTD = ADB_TX_LOW;
+    ADB_PORT = ADB_TX_LOW;
 
     // Delay for: 0 -> 65us, 1 -> 35us
     if (bit == 0) {
@@ -107,7 +111,7 @@ int8_t adb_txbit(uint8_t bit)
     }
 
     // Raise line
-    PORTD = ADB_TX_HIGH;
+    ADB_PORT = ADB_TX_HIGH;
 
     // Delay for: 0 -> 35us, 1 -> 65us
     if (bit == 0) {
@@ -169,7 +173,7 @@ int8_t adb_rx()
     {
         //_delay_us(1.0);
         delay--;
-        if (bit_is_clear(PIND, 2)) {
+        if (bit_is_clear(ADB_PIN, 2)) {
             receiving = 1;
             PORTA = 0x4;
             break;
@@ -184,7 +188,7 @@ int8_t adb_rx()
     {
         PORTA = 0x6;
         ticks = 0;
-        while(bit_is_clear(PIND, 2)) {
+        while(bit_is_clear(ADB_PIN, 2)) {
             ticks++;
         }
 
@@ -213,7 +217,7 @@ int8_t adb_rx()
         //int8_t remaining = 15 - ticks;
         int8_t remaining = 25;
         ticks = 0;
-        while(bit_is_set(PIND, 2) && (ticks < remaining)) {
+        while(bit_is_set(ADB_PIN, 2) && (ticks < remaining)) {
             ticks++;
         }
 
@@ -257,11 +261,11 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     packet |= reg;
 
     // Send attention signal
-    PORTD = ADB_TX_LOW;
+    ADB_PORT = ADB_TX_LOW;
     ADB_DELAY_800;
 
     // Send sync signal
-    PORTD = ADB_TX_HIGH;
+    ADB_PORT = ADB_TX_HIGH;
     ADB_DELAY_70;
 
     // Send command byte
@@ -271,7 +275,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     adb_txbit(0);
 
     // Release line
-    PORTD = ADB_TX_HIGH;
+    ADB_PORT = ADB_TX_HIGH;
 
     return 0;
 }
@@ -293,15 +297,15 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 int8_t adb_init(void)
 {
     // Configure port for output
-    DDRD = 0xFF;
+    DDRB = 0xFF;
 
     // Reach steady state then reset devices
     // TODO this will probably have to change when USB is added.
-    PORTD = ADB_TX_HIGH;
+    ADB_PORT = ADB_TX_HIGH;
     _delay_ms(1000.0);
-    PORTD = ADB_TX_LOW;
+    ADB_PORT = ADB_TX_LOW;
     _delay_ms(4.0);
-    PORTD = ADB_TX_HIGH;
+    ADB_PORT = ADB_TX_HIGH;
 
     // Initialize to default mouse address
     last_device = 3;
