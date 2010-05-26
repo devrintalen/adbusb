@@ -46,7 +46,7 @@ int main(void)
     uart_init();
     stdout = &uart_str;
     
-    while(0)
+    while(1)
     {
         _delay_ms(1.0);
         adb_poll(adb_buff, &adb_len);
