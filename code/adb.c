@@ -161,13 +161,15 @@ int8_t adb_rx()
     uint8_t delay = 240;
     uint8_t receiving = 0;
     uint8_t ticks = 0;
+    uint8_t last_bit;
+
+    // Initialize resources
+    adb_rx_len = 0;
+    memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
 
     // Begin a busy-wait loop to delay for up to 240us. If the data line drops
-    // low during this time then begin receiving data.
-    uint8_t last_bit;
-    uint8_t bit_count = 0;
-    uint8_t buffer[8];
-
+    // low during this time then discard the first bit and then start receiving
+    // data.
     PORTA = 0x2;
     while(delay)
     {
@@ -175,7 +177,9 @@ int8_t adb_rx()
         delay--;
         if (bit_is_clear(ADB_PIN, 2)) {
             receiving = 1;
-            PORTA = 0x4;
+            while(bit_is_clear(ADB_PIN, 2)) {};
+            while(bit_is_set(ADB_PIN, 2)) {};
+            PORTA = 0x6;
             break;
         }
     }
@@ -186,7 +190,6 @@ int8_t adb_rx()
     // about 4.3us.
     while(receiving)
     {
-        PORTA = 0x6;
         ticks = 0;
         while(bit_is_clear(ADB_PIN, 2)) {
             _delay_us(1.0);
@@ -196,17 +199,18 @@ int8_t adb_rx()
         // Based on the length of the low portion of the bit we know if it's a
         // 0 or 1. A 1 will be 30us (~8 ticks) or lower, a 0 will be 45us
         // (~10 ticks) or higher. This code seems to work.
-        if (ticks > 40) {
+        if (ticks > 37) {
             last_bit = 0;
         } else {
             last_bit = 1;
         }
+        PORTA = last_bit;
 
         // Store the bit into the buffer
-        bit_count++;
-        uint8_t i = bit_count / 8;
+        adb_rx_len++;
+        uint8_t i = adb_rx_len / 8;
         assert(i <= 8);
-        buffer[i] = (buffer[i] << 1) | last_bit;
+        adb_rx_buff[i] = (adb_rx_buff[i] << 1) | last_bit;
 
         // Delay for a portion of the remaining ticks; just enough to ensure
         // that we will be in the high portion of the bit so we can then watch
@@ -221,6 +225,7 @@ int8_t adb_rx()
         }
 
         if (ticks == remaining) {
+            adb_rx_len = adb_rx_len - 1;
             receiving = 0;
         }
     }
@@ -228,7 +233,7 @@ int8_t adb_rx()
     PORTA = 0x2;
 
     // Return 0 if we received data
-    if (bit_count)
+    if (adb_rx_len)
         return 0;
     else
         return 1;
@@ -311,6 +316,8 @@ int8_t adb_init(void)
 
     // Enable interrupts
     sei();
+
+    adb_rx_len = 0;
 
     return 0;
 }
