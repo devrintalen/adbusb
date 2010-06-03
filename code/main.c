@@ -41,6 +41,7 @@ int main(void)
 {
     uint8_t adb_buff[8];
     uint8_t adb_len;
+    uint8_t adb_status;
     adb_init();
 
     uart_init();
@@ -49,7 +50,12 @@ int main(void)
     while(1)
     {
         _delay_ms(1.0);
-        adb_poll(adb_buff, &adb_len);
+        adb_status = adb_poll(adb_buff, &adb_len);
+        if (adb_status) {
+            printf("Received %d bits\n", adb_len);
+            printf("%x%x\n", adb_buff[1], adb_buff[0]);
+            break;
+        }
     }
 
     return 0;
