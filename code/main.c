@@ -52,8 +52,11 @@ int main(void)
         _delay_ms(1.0);
         adb_status = adb_poll(adb_buff, &adb_len);
         if (adb_status == 0) {
-            printf("Received %d bits\n", adb_len);
-            printf("%x%x\n", adb_buff[1], adb_buff[0]);
+            printf("\nPoll: received %d bits: ", adb_len);
+            uint8_t bytes = adb_len / 8;
+            for(uint8_t i=0; i<bytes; i++) {
+                print("%x", adb_buff[i]);
+            }
         }
     }
 
