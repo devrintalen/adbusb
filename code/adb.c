@@ -161,7 +161,9 @@ int8_t adb_txbyte(uint8_t command)
     global resources adb_rx_len and adb_rx_buff that should be consumed by the
     calling function.
 
-    This function is blocking while data is being received.
+    This function is blocking while data is being received. It may take a
+    minimum of 240us, or a maximum of 6840us (6.8ms), depending on if and how
+    much data is received.
 
     @return     0 if data is received, 1 if not.
 */
@@ -262,11 +264,14 @@ int8_t adb_rx()
     asserting the attention and sync signals, and the stop bit. The algorithm
     is:
 
-    -# Assert attention signal.
-    -# Assert sync signal.
-    -# Send command byte.
-    -# Send stop bit.
+    -# Assert attention signal (800us).
+    -# Assert sync signal (70us).
+    -# Send command byte (8 * 100us).
+    -# Send stop bit (100us).
     -# Release line.
+
+    This takes approximately 1770us, or 1.7ms. This is longer than a USB frame,
+    so this needs to be taken into account.
 
     @param[in]  address Device address.
     @param[in]  command Command to send.
@@ -351,7 +356,7 @@ int8_t adb_init(void)
 int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
     PORTA = 0x1;
-    _delay_us(100.0);
+    _delay_us(5.0);
     PORTA = 0x0;
 
     uint8_t poll_result;
