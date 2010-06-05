@@ -365,7 +365,7 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
     if (adb_rx() == 0)
     {
         *len = adb_rx_len;
-        memcpy((void*)buff, (void*)adb_rx_buff, 8);
+        memcpy((void*)buff, (void*)adb_rx_buff, 8*sizeof(uint8_t));
         return 1;
     }
 
