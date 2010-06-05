@@ -358,7 +358,7 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
     *len = 0;
 
     // Send a poll command
-    adb_command(last_device, ADB_CMD_TALK, 3);
+    adb_command(last_device, ADB_CMD_TALK, 0);
 
     // Receive data. If any is received copy the data to the buffer passed in
     // and return the correct length.
