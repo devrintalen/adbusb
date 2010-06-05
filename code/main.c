@@ -51,10 +51,9 @@ int main(void)
     {
         _delay_ms(1.0);
         adb_status = adb_poll(adb_buff, &adb_len);
-        if (adb_status) {
+        if (adb_status == 0) {
             printf("Received %d bits\n", adb_len);
             printf("%x%x\n", adb_buff[1], adb_buff[0]);
-            break;
         }
     }
 

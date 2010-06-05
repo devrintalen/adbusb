@@ -319,6 +319,7 @@ int8_t adb_init(void)
 {
     // Configure port for output
     DDRB = 0xFF;
+    DDRA = 0xFF;
 
     // Reach steady state then reset devices
     // TODO this will probably have to change when USB is added.
@@ -349,10 +350,11 @@ int8_t adb_init(void)
 */
 int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
-    DDRA = 0xFF;
     PORTA = 0x1;
     _delay_us(100.0);
     PORTA = 0x0;
+
+    uint8_t poll_result;
 
     // Initialize length
     *len = 0;
@@ -362,14 +364,14 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
 
     // Receive data. If any is received copy the data to the buffer passed in
     // and return the correct length.
-    if (adb_rx() == 0)
+    poll_result = adb_rx();
+    if (poll_result == 0)
     {
         *len = adb_rx_len;
         memcpy((void*)buff, (void*)adb_rx_buff, 8*sizeof(uint8_t));
-        return 1;
     }
 
-    return 0;
+    return poll_result;
 }
 
 /// Enumerate all attached devices
