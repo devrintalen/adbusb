@@ -153,6 +153,15 @@ int8_t adb_txbyte(uint8_t command)
 
 /// Receive a data packet.
 /**
+    Receive a packet from an ADB device. The microcontroller will wait for up
+    to 240us for the device to respond, and if not will return.
+
+    A response from an ADB device is a "1" start bit, followed by 2-8B of data,
+    then a "0" stop bit. This function will store the data and bit count in
+    global resources adb_rx_len and adb_rx_buff that should be consumed by the
+    calling function.
+
+    This function is blocking while data is being received.
 
     @return     0 if data is received, 1 if not.
 */
@@ -168,7 +177,7 @@ int8_t adb_rx()
     memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
 
     // Begin a busy-wait loop to delay for up to 240us. If the data line drops
-    // low during this time then discard the first bit and then start receiving
+    // low during this time then discard the first bit and begin receiving
     // data.
     PORTA = 0x2;
     while(delay)
@@ -184,12 +193,13 @@ int8_t adb_rx()
         }
     }
 
-    // In the interest of speed the following code doesn't use any _delay()
-    // macros to keep things rolling. Instead we use while() loops with the
-    // ticks variable to count things. Based on some measurements a tick takes
-    // about 4.3us.
+    // To make things simple the rx code isn't interrupt-driven. This may be
+    // changed in the future. Right now we use _delay() loops to count the
+    // length of each pulse.
     while(receiving)
     {
+        // This loop counts the duration of the low pulse. The time it takes
+        // is used to determine if the device is sending a 0 or 1.
         ticks = 0;
         while(bit_is_clear(ADB_PIN, 2)) {
             _delay_us(1.0);
@@ -197,8 +207,7 @@ int8_t adb_rx()
         }
 
         // Based on the length of the low portion of the bit we know if it's a
-        // 0 or 1. A 1 will be 30us (~8 ticks) or lower, a 0 will be 45us
-        // (~10 ticks) or higher. This code seems to work.
+        // 0 or 1. A 1 will be 30us, and a 0 will be 45us.
         if (ticks > 37) {
             last_bit = 0;
         } else {
@@ -206,17 +215,20 @@ int8_t adb_rx()
         }
         PORTA = last_bit;
 
-        // Store the bit into the buffer
+        // Store the bit into the buffer. This stores the bits in increasing
+        // bit position, meaning that the data is interpreted as being sent LSB
+        // first. This may be an incorrect assumption.
+        // TODO Figure out if data is MSB or LSB first (probably MSB).
+        // TODO This will fail when the device sends 8B because of the stop bit
         adb_rx_len++;
         uint8_t i = adb_rx_len / 8;
         assert(i <= 8);
         adb_rx_buff[i] = (adb_rx_buff[i] << 1) | last_bit;
 
-        // Delay for a portion of the remaining ticks; just enough to ensure
-        // that we will be in the high portion of the bit so we can then watch
-        // for the high->low transition to start the next bit. Given that a
-        // tick is about 4.3us there are about 18 ticks per 80us (duration of
-        // a bit)
+        // Delay for the remaining time of the bit pulse. This should be 80us
+        // less the length of the initial low pulse. We also monitor the data
+        // line so we don't blow past the end of the bit and shave time off the
+        // next one.
         int8_t remaining = 80 - ticks;
         ticks = 0;
         while(bit_is_set(ADB_PIN, 2) && (ticks < remaining)) {
@@ -224,7 +236,12 @@ int8_t adb_rx()
             ticks++;
         }
 
+        // If the data line still hasn't gone low, and we've waited for the
+        // next bit, then the device has stopped transmitting and we're done.
+        // We verify that the last bit sent is indeed the "0" stop bit and
+        // shave the bit off the bit count.
         if (ticks == remaining) {
+            assert(last_bit == 0);
             adb_rx_len = adb_rx_len - 1;
             receiving = 0;
         }
@@ -314,10 +331,9 @@ int8_t adb_init(void)
     // Initialize to default mouse address
     last_device = 3;
 
-    // Enable interrupts
-    sei();
-
+    // Initialize the rx resources
     adb_rx_len = 0;
+    memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
 
     return 0;
 }
