@@ -175,6 +175,7 @@ int8_t adb_rx()
     uint8_t last_bit;
 
     // Initialize resources
+    DDRB = 0x00;
     adb_rx_len = 0;
     memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
 
@@ -280,6 +281,7 @@ int8_t adb_rx()
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
+    DDRB = 0xff;
     // command byte
     uint8_t packet = 0;
     packet |= address << 4;
@@ -334,8 +336,8 @@ int8_t adb_init(void)
     _delay_ms(4.0);
     ADB_PORT = ADB_TX_HIGH;
 
-    // Initialize to default mouse address
-    last_device = 3;
+    // Initialize to default keyboard address
+    last_device = 2;
 
     // Initialize the rx resources
     adb_rx_len = 0;
