@@ -67,13 +67,13 @@
 #define ADB_DELAY_800 _delay_us(800.0);
 
 /// Output port
-#define ADB_PORT PORTB
+#define ADB_PORT DDRB
 /// Input pin
 #define ADB_PIN PINB
 /// Output low value
-#define ADB_TX_LOW 0x0
+#define ADB_TX_LOW 0x4
 /// Output high value
-#define ADB_TX_HIGH 0x4
+#define ADB_TX_HIGH 0x0
 
 /// Address of last polled device
 uint8_t last_device;
@@ -175,14 +175,13 @@ int8_t adb_rx()
     uint8_t last_bit;
 
     // Initialize resources
-    DDRB = 0x00;
     adb_rx_len = 0;
     memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
 
     // Begin a busy-wait loop to delay for up to 240us. If the data line drops
     // low during this time then discard the first bit and begin receiving
     // data.
-    PORTA = 0x2;
+    PORTC = 0x2;
     while(delay)
     {
         _delay_us(1.0);
@@ -191,7 +190,7 @@ int8_t adb_rx()
             receiving = 1;
             while(bit_is_clear(ADB_PIN, 2)) {};
             while(bit_is_set(ADB_PIN, 2)) {};
-            PORTA = 0x6;
+            PORTC = 0x3;
             break;
         }
     }
@@ -216,7 +215,7 @@ int8_t adb_rx()
         } else {
             last_bit = 1;
         }
-        PORTA = last_bit;
+        PORTC = last_bit;
 
         // Store the bit into the buffer. This stores the bits in increasing
         // bit position, meaning that the data is interpreted as being sent LSB
@@ -250,7 +249,7 @@ int8_t adb_rx()
         }
     }
 
-    PORTA = 0x2;
+    PORTC = 0x2;
 
     // Return 0 if we received data
     if (adb_rx_len)
@@ -281,7 +280,6 @@ int8_t adb_rx()
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-    DDRB = 0xff;
     // command byte
     uint8_t packet = 0;
     packet |= address << 4;
@@ -305,6 +303,10 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
     // Release line
     ADB_PORT = ADB_TX_HIGH;
 
+    // Added this temporarily... does it do anything good?
+    //_delay_us(50.0); // doesn't work
+    _delay_us(100.0); // doesn't doesn't work (might work?)
+
     return 0;
 }
 
@@ -325,8 +327,8 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 int8_t adb_init(void)
 {
     // Configure port for output
-    DDRB = 0xFF;
-    DDRA = 0xFF;
+    //DDRB = 0xFF;
+    DDRC = 0xFF;
 
     // Reach steady state then reset devices
     // TODO this will probably have to change when USB is added.
@@ -336,12 +338,16 @@ int8_t adb_init(void)
     _delay_ms(4.0);
     ADB_PORT = ADB_TX_HIGH;
 
-    // Initialize to default keyboard address
+    // Initialize to default address
+    // Keyboard: 0x2
+    // Mouse: 0x3
     last_device = 2;
 
     // Initialize the rx resources
     adb_rx_len = 0;
     memset(adb_rx_buff, 0, 8*sizeof(uint8_t));
+
+    PORTC = 0x00;
 
     return 0;
 }
@@ -357,9 +363,9 @@ int8_t adb_init(void)
 */
 int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
-    PORTA = 0x1;
+    PORTC = 0x1;
     _delay_us(5.0);
-    PORTA = 0x0;
+    PORTC = 0x0;
 
     uint8_t poll_result;
 
