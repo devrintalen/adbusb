@@ -21,7 +21,7 @@ install: main.hex
 	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U flash:w:main.hex
 
 fixfuse:
-	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U lfuse:w:0b11100000:m
+	avrdude -q -p m32 -P /dev/ttyS0 -c stk500v2 -e -U lfuse:w:0xe0:m -U hfuse:w:0x99:m
 	
 clean:
 	rm -f *.o *.elf *.hex a.out
