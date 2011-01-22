@@ -47,6 +47,9 @@ int main(void)
     uart_init();
     stdout = &uart_str;
     
+    printf("ABDUSB version 0.1\n");
+    printf("Copyright 2009 Devrin Talen\n\n");
+
     while(1)
     {
         _delay_ms(1.0);
