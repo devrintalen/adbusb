@@ -49,7 +49,7 @@ int main(void)
     
     while(1)
     {
-        _delay_ms(1.0);
+        _delay_ms(5000.0);
         adb_status = adb_poll(adb_buff, &adb_len);
         if (adb_status == 0) {
             printf("\nPoll: received %d bits: ", adb_len);
