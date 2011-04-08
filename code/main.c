@@ -56,10 +56,10 @@ int main(void)
         adb_status = adb_poll(adb_buff, &adb_len);
         if (adb_status == 0) {
             printf("\nPoll: received %d bits: ", adb_len);
-            printf("%x,", adb_buff[0]);
-            printf("%x,", adb_buff[1]);
-            printf("%x,", adb_buff[2]);
-            printf("%x", adb_buff[3]);
+            printf("%02x", adb_buff[0]);
+            printf("%02x", adb_buff[1]);
+            printf("%02x", adb_buff[2]);
+            printf("%02x", adb_buff[3]);
         }
     }
 
