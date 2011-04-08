@@ -223,10 +223,10 @@ int8_t adb_rx()
         // first. This may be an incorrect assumption.
         // TODO Figure out if data is MSB or LSB first (probably MSB).
         // TODO This will fail when the device sends 8B because of the stop bit
-        adb_rx_len++;
         uint8_t i = adb_rx_len / 8;
         assert(i <= 8);
         adb_rx_buff[i] = (adb_rx_buff[i] << 1) | last_bit;
+        adb_rx_len++;
 
         // Delay for the remaining time of the bit pulse. This should be 80us
         // less the length of the initial low pulse. We also monitor the data
