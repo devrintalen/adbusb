@@ -281,7 +281,7 @@ int8_t adb_rx()
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-    PORTC = ~PORTC;
+    //PORTC = ~PORTC;
     DDRB = 0xff;
     // command byte
     uint8_t packet = 0;
@@ -328,7 +328,7 @@ int8_t adb_init(void)
     // Configure port for output
     DDRB = 0xFF;
     DDRA = 0xFF;
-    DDRC = 0xFF;
+    //DDRC = 0xFF;
 
     // Reach steady state then reset devices
     // TODO this will probably have to change when USB is added.
@@ -339,7 +339,9 @@ int8_t adb_init(void)
     ADB_PORT = ADB_TX_HIGH;
 
     // Initialize to default keyboard address
-    last_device = 3;
+    // keyboard: 0x2
+    // mouse: 0x3
+    last_device = 2;
 
     // Initialize the rx resources
     adb_rx_len = 0;
