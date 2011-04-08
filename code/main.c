@@ -47,17 +47,19 @@ int main(void)
     uart_init();
     stdout = &uart_str;
     
+    printf("ADBUSB v0.1\n");
+    printf("Copyright 2011 Devrin Talen\n");
+
     while(1)
     {
-        _delay_ms(5000.0);
+        _delay_ms(10.0);
         adb_status = adb_poll(adb_buff, &adb_len);
         if (adb_status == 0) {
             printf("\nPoll: received %d bits: ", adb_len);
-            uint8_t bytes = adb_len / 8;
-            uint8_t i;
-            for(i=0; i<bytes; i++) {
-                printf("%x", adb_buff[i]);
-            }
+            printf("%x,", adb_buff[0]);
+            printf("%x,", adb_buff[1]);
+            printf("%x,", adb_buff[2]);
+            printf("%x", adb_buff[3]);
         }
     }
 
