@@ -26,6 +26,7 @@
 #include <util/delay.h>
 #include "adb.h"
 #include "uart.h"
+#include "keyboard.h"
 
 /// File handle to UART device
 static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
@@ -55,11 +56,14 @@ int main(void)
         _delay_ms(10.0);
         adb_status = adb_poll(adb_buff, &adb_len);
         if (adb_status == 0) {
-            printf("\nPoll: received %d bits: ", adb_len);
-            printf("%02x", adb_buff[0]);
-            printf("%02x", adb_buff[1]);
-            printf("%02x", adb_buff[2]);
-            printf("%02x", adb_buff[3]);
+            //printf("\nPoll: received %d bits: ", adb_len);
+            //printf("%02x", adb_buff[0]);
+            //printf("%02x", adb_buff[1]);
+            //printf("%02x", adb_buff[2]);
+            //printf("%02x", adb_buff[3]);
+            if ((adb_buff[0] & 0x80) == 0) {
+                printf("%c", kb_dtoa(adb_buff[0]));
+            }
         }
     }
 
