@@ -17,19 +17,39 @@
 /** \file keyboard.c
     \brief ADB keyboard library.
 
-    Defines routines to translate ADB keyboard data.
+    Defines routines to translate ADB keyboard data. The Apple Extended
+    Keyboard II (M3501) defines unique keycodes for each button press and
+    release. Modifiers are not encoded in the keycode and so must be tracked
+    in software.
+
+    I have determined the keycode for each key on the keyboard below:
+
+    \verbinclude keyboard_layout.rst
 */
 
 #include <stdlib.h>
 #include <stdint.h>
 
+/// Shift key modifier flag
 uint8_t kb_mod_shift;
+/// Control key modifier flag
 uint8_t kb_mod_ctrl;
+/// Opt key modifier flag
 uint8_t kb_mod_opt;
+/// Command key modifier flag
 uint8_t kb_mod_com;
 
+/// Capslock flag
 uint8_t kb_tog_capslock;
 
+/** \brief Convert keycode to char
+ *
+ * Converts a keycode returned from polling the keyboard into a char. Currently
+ * only supports printable ASCII characters that don't need the shift key.
+ * 
+ * @param[in]   d 8b value to decode.
+ * @return      char representation.
+ */
 char kb_dtoa(uint8_t d)
 {
     switch(d)
