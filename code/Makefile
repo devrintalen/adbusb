@@ -1,4 +1,7 @@
 AVR = atmega32
+LFUSE = 0xe0
+HFUSE = 0x99
+
 OBJECTS=main.o adb.o uart.o keyboard.o
 
 CC=avr-gcc
@@ -21,7 +24,7 @@ install: main.hex
 	$(PROGRAMMER) $(PROGFLAGS) -e -U flash:w:main.hex
 
 fixfuse:
-	$(PROGRAMMER) $(PROGFLAGS) -e -U lfuse:w:0b11100000:m
+	$(PROGRAMMER) $(PROGFLAGS) -e -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m
 	
 clean:
 	rm -f *.o *.elf *.hex a.out
