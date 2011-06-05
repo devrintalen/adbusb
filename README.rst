@@ -23,7 +23,7 @@ Source Code
 All source code is kept under the ``code/`` subdirectory. To compile the
 program simply use ``make all``. To program the executable to the
 microcontroller use ``make install``. Clean up any compiled binaries with
-``make clean``.
+``make clean``. Make sure to run ``make fixfuse`` first.
 
 Documentation
 -------------
@@ -36,6 +36,9 @@ Then open the ``doc/html/index.html`` file in your web browser.
 
 Dependencies
 ------------
+ADBUSB is currently only supported on the ATMega32 microcontroller. Other AVRs
+may work with a little tweaking, but I'm not making any promises.
+
 To generate the binaries you will need the avr-gcc toolchain. This involves the
 following:
 
@@ -63,23 +66,23 @@ Milestone Goals
 	* Complete ADB implementation (reads all keystrokes).
 
 0.4:
-    * PCB design complete (and parts ordered).
-        * Includes ADB and USB connections.
-        * Includes programming port.
-
-0.5:
-    * PCB tested and part programmed successfully.
-
-0.6:
     * Simple USB communication works (device descriptors, etc.)
 
-0.7:
+0.5:
     * Keyboard HID implementation complete
         * Not connected to ADB side
         * Successfully "types" a static string
 
-0.8:
+0.6:
     * ADB to USB translation code complete.
+
+0.7:
+    * PCB design complete (and parts ordered).
+        * Includes ADB and USB connections.
+        * Includes programming port.
+
+0.8:
+    * PCB tested and part programmed successfully.
 
 0.9:
     * Works!
