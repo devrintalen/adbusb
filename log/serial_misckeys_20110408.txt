@@ -1,0 +1,13 @@
+
+Poll: received 16 bits: 72ff0000
+Poll: received 16 bits: f2ff0000
+Poll: received 16 bits: 73ff0000
+Poll: received 16 bits: f3ff0000
+Poll: received 16 bits: 74ff0000
+Poll: received 16 bits: f4ff0000
+Poll: received 16 bits: 75ff0000
+Poll: received 16 bits: f5ff0000
+Poll: received 16 bits: 77ff0000
+Poll: received 16 bits: f7ff0000
+Poll: received 16 bits: 79ff0000
+Poll: received 16 bits: f9ff0000

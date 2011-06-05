@@ -1,0 +1,7 @@
+
+Poll: received 16 bits: 3eff0000
+Poll: received 16 bits: beff0000
+Poll: received 16 bits: 3bff0000
+Poll: received 16 bits: bbff0000
+Poll: received 16 bits: 3dff0000
+Poll: received 16 bits: bdff0000
