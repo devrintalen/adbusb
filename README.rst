@@ -96,3 +96,4 @@ Milestone Goals
 References
 ==========
 1.  http://en.wikipedia.org/wiki/Apple_Desktop_Bus
+2.  http://mcosre.sourceforge.net/docs/adb_intro.html
