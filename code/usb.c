@@ -18,10 +18,48 @@
     \brief USB high-level driver.
 */
 
+#include <avr/interrupt.h>
 #include "usbdrv/usbdrv.h"
 #include "usbdrv/oddebug.h"
 
-PROGMEM char usbHidReportDescriptor[];
+/// Keyboard HID Report Descriptor
+/**
+    This is copied shamelessly from the HID-Keys example.
+*/
+PROGMEM char usbHidReportDescriptor[35] = {
+    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+    0x09, 0x06,                    // USAGE (Keyboard)
+    0xa1, 0x01,                    // COLLECTION (Application)
+    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)
+    0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl)
+    0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI)
+    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+    0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
+    0x75, 0x01,                    //   REPORT_SIZE (1)
+    0x95, 0x08,                    //   REPORT_COUNT (8)
+    0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+    0x95, 0x01,                    //   REPORT_COUNT (1)
+    0x75, 0x08,                    //   REPORT_SIZE (8)
+    0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
+    0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))
+    0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)
+    0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
+    0xc0                           // END_COLLECTION
+};
+
+/// Keyboard HID Report
+/**
+    The structure of this report is determined by the report descriptor. In
+    this case, it's a 2b value where the top byte is the modifier key, and the
+    bottom byte is the keycode.
+*/
+uint8_t hid_report[2];
+
+/// Keyboard idle rate
+/**
+    For some reason the HID spec wants us to track this.
+*/
+uint8_t idle_rate;
 
 /// Handle SETUP transactions.
 /**
@@ -35,26 +73,35 @@ PROGMEM char usbHidReportDescriptor[];
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
     usbRequest_t *rq = (void *)data;
-    //usbMsgPtr = reportBuffer;
+    usbMsgPtr = hid_report;
 
-    /* class request type */
+    // Handle class request type
     if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
-        /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+        // wValue: ReportType (highbyte), ReportID (lowbyte)
         if (rq->bRequest == USBRQ_HID_GET_REPORT) {
-            /* we only have one report type, so don't look at wValue */
-            //buildReport(keyPressed());
-            //return sizeof(reportBuffer);
-            return USB_NO_MSG;
+            // we only have one report type, so don't look at wValue
+            return sizeof(hid_report);
         } else if (rq->bRequest == USBRQ_HID_GET_IDLE) {
-            //usbMsgPtr = &idleRate;
-            //return 1;
-            return USB_NO_MSG;
+            usbMsgPtr = &idle_rate;
+            return sizeof(idle_rate);
         } else if (rq->bRequest == USBRQ_HID_SET_IDLE) {
-            //idleRate = rq->wValue.bytes[1];
+            idle_rate = rq->wValue.bytes[1];
         }
-    } else {
-        /* no vendor specific requests implemented */
     }
     return 0;
 }
 
+/// Initialize USB hardware
+/**
+    Initialize any resources needed by the USB code and hardware.
+*/
+void usb_init()
+{
+    usbInit();
+    sei();
+
+    hid_report[0] = 0;
+    hid_report[1] = 0;
+
+    return;
+}

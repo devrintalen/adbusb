@@ -25,11 +25,13 @@
 #include <stdio.h>
 #include <util/delay.h>
 #include "adb.h"
-#include "uart.h"
 #include "keyboard.h"
+#include "uart.h"
+#include "usb.h"
+#include "usbdrv.h"
 
 /// File handle to UART device
-static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
+//static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
 /// Reset entry point.
 /**
@@ -40,31 +42,26 @@ static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 */
 int main(void)
 {
-    uint8_t adb_buff[8];
-    uint8_t adb_len;
-    uint8_t adb_status;
-    adb_init();
+    // Initialize USB
+    usb_init();
 
-    uart_init();
-    stdout = &uart_str;
+    // Initialize ADB
+    //uint8_t adb_buff[8];
+    //uint8_t adb_len;
+    //uint8_t adb_status;
+    //adb_init();
+
+    //uart_init();
+    //stdout = &uart_str;
     
-    printf("ADBUSB v0.1\n");
-    printf("Copyright 2011 Devrin Talen\n");
+    //printf("ADBUSB v0.1\n");
+    //printf("Copyright 2011 Devrin Talen\n");
 
     while(1)
     {
-        _delay_ms(10.0);
-        adb_status = adb_poll(adb_buff, &adb_len);
-        if (adb_status == 0) {
-            //printf("\nPoll: received %d bits: ", adb_len);
-            //printf("%02x", adb_buff[0]);
-            //printf("%02x", adb_buff[1]);
-            //printf("%02x", adb_buff[2]);
-            //printf("%02x", adb_buff[3]);
-            if ((adb_buff[0] & 0x80) == 0) {
-                printf("%c", kb_dtoa(adb_buff[0]));
-            }
-        }
+        //_delay_ms(10.0);
+        usbPoll();
+        //adb_status = adb_poll(adb_buff, &adb_len);
     }
 
     return 0;

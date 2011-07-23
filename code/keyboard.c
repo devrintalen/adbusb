@@ -22,6 +22,8 @@
     release. Modifiers are not encoded in the keycode and so must be tracked
     in software.
 
+    When a key is pressed, bit 7 is 0. When it is released, bit 7 is 1.
+
     I have determined the keycode for each key on the keyboard below:
 
     \verbinclude keyboard_layout.rst
@@ -29,6 +31,69 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+
+/* Keyboard usage values, see usb.org's HID-usage-tables document, chapter
+ * 10 Keyboard/Keypad Page for more codes.
+ */
+#define USB_MOD_CONTROL_LEFT    (1<<0)
+#define USB_MOD_SHIFT_LEFT      (1<<1)
+#define USB_MOD_ALT_LEFT        (1<<2)
+#define USB_MOD_GUI_LEFT        (1<<3)
+#define USB_MOD_CONTROL_RIGHT   (1<<4)
+#define USB_MOD_SHIFT_RIGHT     (1<<5)
+#define USB_MOD_ALT_RIGHT       (1<<6)
+#define USB_MOD_GUI_RIGHT       (1<<7)
+
+#define USB_KEY_A       4
+#define USB_KEY_B       5
+#define USB_KEY_C       6
+#define USB_KEY_D       7
+#define USB_KEY_E       8
+#define USB_KEY_F       9
+#define USB_KEY_G       10
+#define USB_KEY_H       11
+#define USB_KEY_I       12
+#define USB_KEY_J       13
+#define USB_KEY_K       14
+#define USB_KEY_L       15
+#define USB_KEY_M       16
+#define USB_KEY_N       17
+#define USB_KEY_O       18
+#define USB_KEY_P       19
+#define USB_KEY_Q       20
+#define USB_KEY_R       21
+#define USB_KEY_S       22
+#define USB_KEY_T       23
+#define USB_KEY_U       24
+#define USB_KEY_V       25
+#define USB_KEY_W       26
+#define USB_KEY_X       27
+#define USB_KEY_Y       28
+#define USB_KEY_Z       29
+
+#define USB_KEY_1       30
+#define USB_KEY_2       31
+#define USB_KEY_3       32
+#define USB_KEY_4       33
+#define USB_KEY_5       34
+#define USB_KEY_6       35
+#define USB_KEY_7       36
+#define USB_KEY_8       37
+#define USB_KEY_9       38
+#define USB_KEY_0       39
+
+#define USB_KEY_F1      58
+#define USB_KEY_F2      59
+#define USB_KEY_F3      60
+#define USB_KEY_F4      61
+#define USB_KEY_F5      62
+#define USB_KEY_F6      63
+#define USB_KEY_F7      64
+#define USB_KEY_F8      65
+#define USB_KEY_F9      66
+#define USB_KEY_F10     67
+#define USB_KEY_F11     68
+#define USB_KEY_F12     69
 
 /// Shift key modifier flag
 uint8_t kb_mod_shift;
@@ -41,6 +106,102 @@ uint8_t kb_mod_com;
 
 /// Capslock flag
 uint8_t kb_tog_capslock;
+
+/// Current key
+uint8_t kb_key;
+
+/** \brief Register a keypress
+ *
+ * Sets internal keyboard state according to a keycode returned from the ADB
+ * keyboard. Tracks modifier keys and regular keys.
+ *
+ * @param[in]   keycode 8b value returned from keyboard.
+ * @return      0 for success.
+ */
+uint8_t kb_register(uint8_t keycode)
+{
+    // The top bit of the keycode tells us whether a key was pressed or
+    // released. It is 0 when pressed and 1 when released.
+    uint8_t pressed = ~keycode && 0x80;
+
+    // Evaluate the rest of the keycode.
+    switch(keycode & 0x7f)
+    {
+        // Modifier keys
+        case 0x38: kb_mod_shift = pressed; break;
+        case 0x36: kb_mod_ctrl = pressed; break;
+        case 0x3a: kb_mod_opt = pressed; break;
+        case 0x37: kb_mod_com = pressed; break;
+
+        // Keys
+        case 0x00: kb_key = USB_KEY_A; break;
+        case 0x0b: kb_key = USB_KEY_B; break;
+        case 0x08: kb_key = USB_KEY_C; break;
+        case 0x02: kb_key = USB_KEY_D; break;
+        case 0x0e: kb_key = USB_KEY_E; break;
+        case 0x03: kb_key = USB_KEY_F; break;
+        case 0x05: kb_key = USB_KEY_G; break;
+        case 0x04: kb_key = USB_KEY_H; break;
+        case 0x22: kb_key = USB_KEY_I; break;
+        case 0x26: kb_key = USB_KEY_J; break;
+        case 0x28: kb_key = USB_KEY_K; break;
+        case 0x25: kb_key = USB_KEY_L; break;
+        case 0x2e: kb_key = USB_KEY_M; break;
+        case 0x2d: kb_key = USB_KEY_N; break;
+        case 0x1f: kb_key = USB_KEY_O; break;
+        case 0x23: kb_key = USB_KEY_P; break;
+        case 0x0c: kb_key = USB_KEY_Q; break;
+        case 0x0f: kb_key = USB_KEY_R; break;
+        case 0x01: kb_key = USB_KEY_S; break;
+        case 0x11: kb_key = USB_KEY_T; break;
+        case 0x20: kb_key = USB_KEY_U; break;
+        case 0x09: kb_key = USB_KEY_V; break;
+        case 0x0d: kb_key = USB_KEY_W; break;
+        case 0x07: kb_key = USB_KEY_X; break;
+        case 0x10: kb_key = USB_KEY_Y; break;
+        case 0x06: kb_key = USB_KEY_Z; break;
+
+        case 0x12: kb_key = USB_KEY_1; break;
+        case 0x13: kb_key = USB_KEY_2; break;
+        case 0x14: kb_key = USB_KEY_3; break;
+        case 0x15: kb_key = USB_KEY_4; break;
+        case 0x17: kb_key = USB_KEY_5; break;
+        case 0x16: kb_key = USB_KEY_6; break;
+        case 0x1a: kb_key = USB_KEY_7; break;
+        case 0x1c: kb_key = USB_KEY_8; break;
+        case 0x19: kb_key = USB_KEY_9; break;
+        case 0x1d: kb_key = USB_KEY_0; break;
+
+        default: kb_key = 0;
+    }
+
+    // Zero out the value if the key was being released.
+    kb_key = kb_key && pressed;
+
+    return 0;
+}
+
+/** \brief Get an HID report
+ *
+ * Creates an HID report according to the internal keyboard state.
+ *
+ * @param[in]   buffer  Pointer to a 2x8b array.
+ * @return      0 for success.   
+ */
+uint8_t kb_get_hid(uint8_t *buffer)
+{
+    // Set the lower byte of the buffer to the current key.
+    buffer[0] = kb_key;
+
+    // Set the high byte of the buffer to the current set of modifiers.
+    buffer[1] = 0;
+    buffer[1] |= kb_mod_shift & USB_MOD_SHIFT_LEFT;
+    buffer[1] |= kb_mod_ctrl & USB_MOD_CONTROL_LEFT;
+    buffer[1] |= kb_mod_opt & USB_MOD_GUI_LEFT;
+    buffer[1] |= kb_mod_com & USB_MOD_ALT_LEFT;
+
+    return 0;
+}
 
 /** \brief Convert keycode to char
  *
