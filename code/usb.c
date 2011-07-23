@@ -15,18 +15,46 @@
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
 /** \file usb.c
-    \brief USB driver.
+    \brief USB high-level driver.
 */
 
 #include "usbdrv/usbdrv.h"
 #include "usbdrv/oddebug.h"
 
-/// USB setup code
+PROGMEM char usbHidReportDescriptor[];
+
+/// Handle SETUP transactions.
 /**
-    This does something and I have no idea what it is.
+    Received a SETUP transaction from the USB host. This could be the start of
+    a CONTROL transfer, in which case we better be ready to give the host the
+    latest data from the keyboard.
+
+    @param[in]  data    SETUP transaction data.
+    @return     Length of data, or 0 if not handled.
 */
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
+    usbRequest_t *rq = (void *)data;
+    //usbMsgPtr = reportBuffer;
+
+    /* class request type */
+    if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
+        /* wValue: ReportType (highbyte), ReportID (lowbyte) */
+        if (rq->bRequest == USBRQ_HID_GET_REPORT) {
+            /* we only have one report type, so don't look at wValue */
+            //buildReport(keyPressed());
+            //return sizeof(reportBuffer);
+            return USB_NO_MSG;
+        } else if (rq->bRequest == USBRQ_HID_GET_IDLE) {
+            //usbMsgPtr = &idleRate;
+            //return 1;
+            return USB_NO_MSG;
+        } else if (rq->bRequest == USBRQ_HID_SET_IDLE) {
+            //idleRate = rq->wValue.bytes[1];
+        }
+    } else {
+        /* no vendor specific requests implemented */
+    }
     return 0;
 }
 
