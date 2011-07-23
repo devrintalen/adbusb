@@ -18,6 +18,10 @@ Features:
 * Only supports one keyboard connection (no daisy-chaining, no mice, etc.)
 * Open source
 
+This project makes use of the V-USB_ open source USB driver.
+
+.. _V-USB: http://www.obdev.at/vusb/ 
+
 Source Code
 -----------
 All source code is kept under the ``code/`` subdirectory. To compile the
