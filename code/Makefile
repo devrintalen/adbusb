@@ -18,7 +18,7 @@ AVR = atmega32
 LFUSE = 0xe0
 HFUSE = 0x99
 
-OBJECTS=main.o usb.o adb.o uart.o keyboard.o usbdrv/usbdrv.o usbdrv/oddebug.o usbdrv/usbdrvasm.o 
+OBJECTS=main.o adb.o uart.o keyboard.o usbdrv/usbdrv.o usbdrv/oddebug.o usbdrv/usbdrvasm.o 
 
 CC=avr-gcc
 CFLAGS=-Wall -g -O2

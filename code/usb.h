@@ -14,4 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef __usb_h__
+#define __usb_h__
+
+#include <stdint.h>
+
 void usb_init();
+
+
+#endif
