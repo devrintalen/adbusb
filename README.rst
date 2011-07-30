@@ -3,7 +3,7 @@ ADB-USB
 =======
 
 :Author: Devrin Talen
-:Revision: 0.1
+:Revision: 0.4
 
 Overview
 ========
@@ -22,40 +22,47 @@ This project makes use of the V-USB_ open source USB driver.
 
 .. _V-USB: http://www.obdev.at/vusb/ 
 
-Source Code
------------
-All source code is kept under the ``code/`` subdirectory. To compile the
-program simply use ``make all``. To program the executable to the
-microcontroller use ``make install``. Clean up any compiled binaries with
-``make clean``. Make sure to run ``make fixfuse`` first.
+Getting Started
+---------------
+This project includes software for an Atmel AVR microcontroller and schematics
+and designs for a PCB. The first thing to do is compile the source for the AVR
+that you want to use.
+
+First, you'll need to make sure you have gcc-avr_, avr-libc_, and avrdude_ in
+order to compile the source. On Ubuntu, you can do this with::
+
+% sudo apt-get install gcc-avr avr-libc avrdude
+
+All of the source code is in the ``code/`` subdirectory. The Makefile defines
+these targets:
+
+``all``
+    Compiles all of the source files into ``main.hex``.
+
+``install``
+    Uses avrdude to program the microcontroller.
+
+``fixfuse``
+    Resets fuse settings on the Mega32 to something that I know works.
+
+You may need to update the Makefile according to your environment and the
+device you are programming. The variables to look out for are ``AVR``, which
+defines the device (this is passed to ``avr-gcc``) and ``PROGFLAGS``, which are
+the flags passed to ``avrdude`` during programming.
+
+Once you are able to program your device, you need to assemble a circuit
+according to the schematics under ``schematic/``, which is coming soon. I
+haven't gotten far enough on the project yet to need this.
 
 Documentation
 -------------
 The code is documented in a Doxygen-friendly format. To generate the
 documentation run the following in the ``doc/`` directory::
 
-    % make all
+% make all
 
 Then open the ``doc/html/index.html`` file in your web browser.
 
-Dependencies
-------------
-ADBUSB is currently only supported on the ATMega32 microcontroller. Other AVRs
-may work with a little tweaking, but I'm not making any promises.
-
-To generate the binaries you will need the avr-gcc toolchain. This involves the
-following:
-
-* avr-gcc
-* AVR libc
-
-Programming the device requires the following:
-
-* Avrdude
-* Serial port _or_ USB-serial adapter
-* Serial cable
-
-Generating the documentation requires Doxygen.
 
 Milestone Goals
 ===============
