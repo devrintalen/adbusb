@@ -18,5 +18,9 @@
     \brief Global routines for the keyboard library.
 */
 
+#ifndef __inc_keyboard__
+#define __inc_keyboard__
+
 char kb_dtoa(uint8_t d);
 
+#endif

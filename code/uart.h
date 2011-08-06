@@ -18,5 +18,10 @@
     \brief Routines for UART interface.
 */
 
+#ifndef __inc_uart__
+#define __inc_uart__
+
 void uart_init(void);
 int uart_putchar(char c, FILE *stream);
+
+#endif
