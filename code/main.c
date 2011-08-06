@@ -40,7 +40,8 @@
 /// File handle to UART device
 static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
-PROGMEM char usbHidReportDescriptor[52] = { /* USB report descriptor, size must match usbconfig.h */
+/**
+PROGMEM char usbHidReportDescriptor[52] = { //USB report descriptor, size must match usbconfig.h
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x02,                    // USAGE (Mouse)
     0xa1, 0x01,                    // COLLECTION (Application)
@@ -69,11 +70,11 @@ PROGMEM char usbHidReportDescriptor[52] = { /* USB report descriptor, size must 
     0xC0,                          //   END_COLLECTION
     0xC0,                          // END COLLECTION
 };
+*/
 /// Keyboard HID Report Descriptor
 /**
     This is copied shamelessly from the HID-Keys example.
 */
-/**
 PROGMEM char usbHidReportDescriptor[35] = {
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
     0x09, 0x06,                    // USAGE (Keyboard)
@@ -94,7 +95,6 @@ PROGMEM char usbHidReportDescriptor[35] = {
     0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
     0xc0                           // END_COLLECTION
 };
-*/
 
 /// Keyboard HID Report
 /**
@@ -102,33 +102,16 @@ PROGMEM char usbHidReportDescriptor[35] = {
     this case, it's a 2b value where the top byte is the modifier key, and the
     bottom byte is the keycode.
 */
-//static uint8_t hid_report[2];
-typedef struct{
-    uchar   buttonMask;
-    char    dx;
-    char    dy;
-    char    dWheel;
-}report_t;
+typedef struct {
+    //uchar   buttonMask;
+    //char    dx;
+    //char    dy;
+    //char    dWheel;
+    uint8_t modifiers;
+    uint8_t keycode;
+} report_t;
 
 static report_t reportBuffer;
-
-static int      sinus = 7 << 6, cosinus = 0;
-
-/* The following function advances sin/cos by a fixed angle
- * and stores the difference to the previous coordinates in the report
- * descriptor.
- * The algorithm is the simulation of a second order differential equation.
- */
-static void advanceCircleByFixedAngle(void)
-{
-char    d;
-
-#define DIVIDE_BY_64(val)  (val + (val > 0 ? 32 : -32)) >> 6    /* rounding divide */
-    reportBuffer.dx = d = DIVIDE_BY_64(cosinus);
-    sinus += d;
-    reportBuffer.dy = d = DIVIDE_BY_64(sinus);
-    cosinus -= d;
-}
 
 /// Keyboard idle rate
 /**
@@ -219,7 +202,7 @@ int main(void)
         //adb_status = adb_poll(adb_buff, &adb_len);
         usbPoll();
         if (usbInterruptIsReady()) {
-            advanceCircleByFixedAngle();
+            reportBuffer.modifiers = 0x01; // press left ctrl
             usbSetInterrupt((void *)&reportBuffer, sizeof(reportBuffer));
         }
     }
