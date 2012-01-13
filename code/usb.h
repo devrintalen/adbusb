@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include "usbdrv.h"
+#include "oddebug.h"
 
 void usb_init();
 
@@ -31,14 +32,34 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]);
 /// Keyboard HID Report
 /**
     The structure of this report is determined by the report descriptor. In
-    this case, it's a 2b value where the top byte is the modifier key, and the
+    this case, it's a 2B value where the top byte is the modifier key, and the
     bottom byte is the keycode.
 */
+/*
 typedef struct {
-    uint8_t modifiers;
+    uint8_t modifier;
     uint8_t keycode;
 } report_t;
 
 static report_t reportBuffer;
+*/
+
+typedef struct {
+  char	id;
+  char	meta;
+  char	b[4];
+}keybReport_t;
+
+typedef struct{
+  char    id;
+  uchar   buttonMask;
+  char    dx;
+  char    dy;
+}mouseReport_t;
+
+static keybReport_t keybReportBuffer={1, 0, {0, 0, 0, 0}};
+static mouseReport_t mouseReportBuffer={2, 0, 0, 0};
+
+//static uint8_t reportBuffer[2];
 
 #endif
