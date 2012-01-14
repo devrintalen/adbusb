@@ -57,20 +57,31 @@ int main(void)
     uart_init();
     stdout = &uart_str;
     
-    //printf("ADBUSB v0.1\n");
-    //printf("Copyright 2011 Devrin Talen\n");
+    printf("ADBUSB v0.4\n");
+    printf("Copyright 2011-12 Devrin Talen\n");
 
+    uint8_t dbg_index = 0;
     while(1)
     {
-        //_delay_ms(10.0);
-        //adb_status = adb_poll(adb_buff, &adb_len);
-        wdt_reset();
-        usbPoll();
-        if (usbInterruptIsReady()) {
-            DBG1(0x03, 0, 0);   /* debug output: interrupt report prepared */
-            usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
-	    keybReportBuffer.b[0] = 0;
-        }
+      //_delay_ms(10.0);
+      //adb_status = adb_poll(adb_buff, &adb_len);
+      //wdt_reset();
+      usbPoll();
+      if (usbInterruptIsReady()) {
+	if (dbg_index == 2) {
+	  keybReportBuffer.b[0] = 4;
+	} else if (dbg_index == 4) {
+	  keybReportBuffer.b[0] = 5;
+	} else if (dbg_index == 6) {
+	  keybReportBuffer.b[0] = 6;
+	} else if (dbg_index == 8) {
+	  keybReportBuffer.b[0] = 7;
+	}
+	dbg_index++;
+	DBG1(0x03, 0, 0);   /* debug output: interrupt report prepared */
+	usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
+	keybReportBuffer.b[0] = 0;
+      }
     }
 
     return 0;
