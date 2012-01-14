@@ -34,44 +34,6 @@
 /// File handle to UART device
 static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
-/// Proof of concept function to type "Hello world!"
-void type_helloworld()
-{
-    static uint8_t index = 0;
-
-    if (index == 2) {
-        keybReportBuffer.meta = 0x00; // left shift = 2
-        keybReportBuffer.b[0] = USB_KEY_H;
-    } else if (index == 4) {
-        keybReportBuffer.b[0] = USB_KEY_E;
-    } else if (index == 6) {
-        keybReportBuffer.b[0] = USB_KEY_L;
-    } else if (index == 8) {
-        keybReportBuffer.b[0] = USB_KEY_L;
-    } else if (index == 10) {
-        keybReportBuffer.b[0] = USB_KEY_O;
-    } else if (index == 12) {
-        keybReportBuffer.b[0] = USB_KEY_SPACE;
-    } else if (index == 14) {
-        keybReportBuffer.b[0] = USB_KEY_W;
-    } else if (index == 16) {
-        keybReportBuffer.b[0] = USB_KEY_O;
-    } else if (index == 18) {
-        keybReportBuffer.b[0] = USB_KEY_R;
-    } else if (index == 20) {
-        keybReportBuffer.b[0] = USB_KEY_L;
-    } else if (index == 22) {
-        keybReportBuffer.b[0] = USB_KEY_D;
-    } else {
-      //keybReportBuffer.meta = 0x00;
-      //keybReportBuffer.b[0] = 0;
-    }
-
-    index++;
-
-    return;
-}
-
 /// Reset entry point.
 /**
     At reset the device starts executing at this point. This will call
@@ -92,8 +54,8 @@ int main(void)
     //uint8_t adb_status;
     //adb_init();
 
-    //uart_init();
-    //stdout = &uart_str;
+    uart_init();
+    stdout = &uart_str;
     
     //printf("ADBUSB v0.1\n");
     //printf("Copyright 2011 Devrin Talen\n");
@@ -105,7 +67,6 @@ int main(void)
         wdt_reset();
         usbPoll();
         if (usbInterruptIsReady()) {
-            type_helloworld();
             DBG1(0x03, 0, 0);   /* debug output: interrupt report prepared */
             usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
 	    keybReportBuffer.b[0] = 0;
