@@ -27,75 +27,155 @@
     I have determined the keycode for each key on the keyboard below:
 
     \verbinclude keyboard_layout.rst
+
+    This keyboard has option and command keys instead of super and alt. This
+    library will remap those accordingly.
 */
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <avr/pgmspace.h>
 
-/* Keyboard usage values, see usb.org's HID-usage-tables document, chapter
- * 10 Keyboard/Keypad Page for more codes.
+/// Represent a translation from ADB to USB or ascii
+struct keycode_translation {
+  unsigned char adb;
+  unsigned char usb;
+  char ascii;
+};
+
+/** \brief ADB to USB translation
+ *
+ * Maps ADB keycodes to USB HID values. See chapter 10 of the 
+ * USB HID Usage Tables document.
  */
-#define USB_MOD_CONTROL_LEFT    (1<<0)
-#define USB_MOD_SHIFT_LEFT      (1<<1)
-#define USB_MOD_ALT_LEFT        (1<<2)
-#define USB_MOD_GUI_LEFT        (1<<3)
-#define USB_MOD_CONTROL_RIGHT   (1<<4)
-#define USB_MOD_SHIFT_RIGHT     (1<<5)
-#define USB_MOD_ALT_RIGHT       (1<<6)
-#define USB_MOD_GUI_RIGHT       (1<<7)
+struct keycode_translation keycodes[] PROGMEM = {
 
-#define USB_KEY_SPACE   44
+  // <esc> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+  {0x35, 41, ' '},
+  {0x7a, 58, ' '},
+  {0x78, 59, ' '},
+  {0x63, 60, ' '},
+  {0x76, 61, ' '},
+  {0x60, 62, ' '},
+  {0x61, 63, ' '},
+  {0x62, 64, ' '},
+  {0x64, 65, ' '},
+  {0x65, 66, ' '},
+  {0x6d, 67, ' '},
+  {0x67, 68, ' '},
+  {0x6f, 69, ' '},
+  {0x69, 104, ' '},
+  {0x6b, 105, ' '},
+  {0x71, 106, ' '},
 
-#define USB_KEY_A       4
-#define USB_KEY_B       5
-#define USB_KEY_C       6
-#define USB_KEY_D       7
-#define USB_KEY_E       8
-#define USB_KEY_F       9
-#define USB_KEY_G       10
-#define USB_KEY_H       11
-#define USB_KEY_I       12
-#define USB_KEY_J       13
-#define USB_KEY_K       14
-#define USB_KEY_L       15
-#define USB_KEY_M       16
-#define USB_KEY_N       17
-#define USB_KEY_O       18
-#define USB_KEY_P       19
-#define USB_KEY_Q       20
-#define USB_KEY_R       21
-#define USB_KEY_S       22
-#define USB_KEY_T       23
-#define USB_KEY_U       24
-#define USB_KEY_V       25
-#define USB_KEY_W       26
-#define USB_KEY_X       27
-#define USB_KEY_Y       28
-#define USB_KEY_Z       29
+  // ~ 1 2 3 4 5 6 7 8 9 0 - + <del>
+  {0x32, 53, '`'},
+  {0x12, 30, '1'},
+  {0x13, 31, '2'},
+  {0x14, 32, '3'},
+  {0x15, 33, '4'},
+  {0x17, 34, '5'},
+  {0x16, 35, '6'},
+  {0x1a, 36, '7'},
+  {0x1c, 37, '8'},
+  {0x19, 38, '9'},
+  {0x1d, 39, '0'},
+  {0x1b, 45, '-'},
+  {0x18, 46, '='},
+  {0x33, 42, ' '},
+  /* <tab> q w e r t y u i o p [ ] \ */
+  {0x30, 43, ' '},
+  {0x0c, 20, 'q'},
+  {0x0d, 26, 'w'},
+  {0x0e, 8, 'e'},
+  {0x0f, 21, 'r'},
+  {0x11, 23, 't'},
+  {0x10, 28, 'y'},
+  {0x20, 24, 'u'},
+  {0x22, 12, 'i'},
+  {0x1f, 18, 'o'},
+  {0x23, 19, 'p'},
+  {0x21, 47, '['},
+  {0x1e, 48, ']'},
+  {0x2a, 49, '\\'},
+  // <cap> a s d f g h j k l ; ' <ret>
+  {0x39, 57, ' '},
+  {0x00, 4, 'a'},
+  {0x01, 22, 's'},
+  {0x02, 7, 'd'},
+  {0x03, 9, 'f'},
+  {0x05, 10, 'g'},
+  {0x04, 11, 'h'},
+  {0x26, 13, 'j'},
+  {0x28, 14, 'k'},
+  {0x25, 15, 'l'},
+  {0x29, 51, ';'},
+  {0x27, 52, '\''},
+  {0x24, 40, ' '},
+  // <shift> z x c v b n m , . / <shift>           
+  // 38 (shift)
+  {0x06, 29, 'z'},
+  {0x07, 27, 'x'},
+  {0x08, 06, 'c'},
+  {0x09, 25, 'v'},
+  {0x0b, 05, 'b'},
+  {0x2d, 17, 'n'},
+  {0x2e, 16, 'm'},
+  {0x2b, 54, ','},
+  {0x2f, 55, '.'},
+  {0x2c, 56, '/'},
+  // 38 (shift)
+  // <ctrl> <o> <c> <space> <c> <o> <ctrl>        
+  // 36 (ctrl)
+  // 3a (opt -> super)
+  // 37 (command -> alt)
+  {0x31, 44, ' '},
+  // 37 (command -> alt)
+  // 3a (opt -> super)
+  // 36 (ctrl)
 
-#define USB_KEY_1       30
-#define USB_KEY_2       31
-#define USB_KEY_3       32
-#define USB_KEY_4       33
-#define USB_KEY_5       34
-#define USB_KEY_6       35
-#define USB_KEY_7       36
-#define USB_KEY_8       37
-#define USB_KEY_9       38
-#define USB_KEY_0       39
+  // <help> <hom> <pgup>
+  {0x72, 117, ' '},
+  {0x73, 74, ' '},
+  {0x74, 75, ' '},
+  // <del>  <end> <pgdn>
+  {0x75, 76, ' '},
+  {0x77, 77, ' '},
+  {0x79, 78, ' '},
+  
+  // up arrow      
+  {0x3e, 82, ' '},
+  // left, down, right arrows
+  {0x3b, 80, ' '},
+  {0x3d, 81, ' '},
+  // ??
 
-#define USB_KEY_F1      58
-#define USB_KEY_F2      59
-#define USB_KEY_F3      60
-#define USB_KEY_F4      61
-#define USB_KEY_F5      62
-#define USB_KEY_F6      63
-#define USB_KEY_F7      64
-#define USB_KEY_F8      65
-#define USB_KEY_F9      66
-#define USB_KEY_F10     67
-#define USB_KEY_F11     68
-#define USB_KEY_F12     69
+  // <c> = / *
+  {0x47, 83, ' '},
+  {0x51, 103, '='},
+  {0x4b, 84, '/'},
+  {0x43, 85, '*'},
+  // 7 8 9 -
+  {0x59, 95, '7'},
+  {0x5b, 96, '8'},
+  {0x5c, 97, '9'},
+  {0x4e, 86, '-'},
+  // 4 5 6 +
+  {0x56, 92, '4'},
+  {0x57, 93, '5'},
+  {0x58, 94, '6'},
+  {0x45, 87, '+'},
+  // 1 2 3 <ent>
+  {0x53, 89, '1'},
+  {0x54, 90, '2'},
+  {0x55, 91, '3'},
+  {0x4c, 88, ' '},
+  // 0 .
+  {0x52, 98, '0'},
+  {0x41, 99, '.'},
+
+  {0, 0, 0}
+};
 
 /// Shift key modifier flag
 uint8_t kb_mod_shift;
@@ -125,162 +205,115 @@ uint8_t kb_register(uint8_t keycode)
     // The top bit of the keycode tells us whether a key was pressed or
     // released. It is 0 when pressed and 1 when released.
     uint8_t pressed = ~keycode && 0x80;
+    uint8_t adb_code = keycode & 0x7f;
 
-    // Evaluate the rest of the keycode.
-    switch(keycode & 0x7f)
-    {
-        // Modifier keys
-        case 0x38: kb_mod_shift = pressed; break;
-        case 0x36: kb_mod_ctrl = pressed; break;
-        case 0x3a: kb_mod_opt = pressed; break;
-        case 0x37: kb_mod_com = pressed; break;
-
-        // Keys
-        case 0x00: kb_key = USB_KEY_A; break;
-        case 0x0b: kb_key = USB_KEY_B; break;
-        case 0x08: kb_key = USB_KEY_C; break;
-        case 0x02: kb_key = USB_KEY_D; break;
-        case 0x0e: kb_key = USB_KEY_E; break;
-        case 0x03: kb_key = USB_KEY_F; break;
-        case 0x05: kb_key = USB_KEY_G; break;
-        case 0x04: kb_key = USB_KEY_H; break;
-        case 0x22: kb_key = USB_KEY_I; break;
-        case 0x26: kb_key = USB_KEY_J; break;
-        case 0x28: kb_key = USB_KEY_K; break;
-        case 0x25: kb_key = USB_KEY_L; break;
-        case 0x2e: kb_key = USB_KEY_M; break;
-        case 0x2d: kb_key = USB_KEY_N; break;
-        case 0x1f: kb_key = USB_KEY_O; break;
-        case 0x23: kb_key = USB_KEY_P; break;
-        case 0x0c: kb_key = USB_KEY_Q; break;
-        case 0x0f: kb_key = USB_KEY_R; break;
-        case 0x01: kb_key = USB_KEY_S; break;
-        case 0x11: kb_key = USB_KEY_T; break;
-        case 0x20: kb_key = USB_KEY_U; break;
-        case 0x09: kb_key = USB_KEY_V; break;
-        case 0x0d: kb_key = USB_KEY_W; break;
-        case 0x07: kb_key = USB_KEY_X; break;
-        case 0x10: kb_key = USB_KEY_Y; break;
-        case 0x06: kb_key = USB_KEY_Z; break;
-
-        case 0x12: kb_key = USB_KEY_1; break;
-        case 0x13: kb_key = USB_KEY_2; break;
-        case 0x14: kb_key = USB_KEY_3; break;
-        case 0x15: kb_key = USB_KEY_4; break;
-        case 0x17: kb_key = USB_KEY_5; break;
-        case 0x16: kb_key = USB_KEY_6; break;
-        case 0x1a: kb_key = USB_KEY_7; break;
-        case 0x1c: kb_key = USB_KEY_8; break;
-        case 0x19: kb_key = USB_KEY_9; break;
-        case 0x1d: kb_key = USB_KEY_0; break;
-
-        default: kb_key = 0;
+    // Modifier keys are handled separately.
+    switch(adb_code) {
+    case 0x38:
+      kb_mod_shift = pressed;
+      return 0;
+    case 0x36:
+      kb_mod_ctrl = pressed;
+      return 0;
+    case 0x3a: 
+      kb_mod_opt = pressed;
+      return 0;
+    case 0x37: 
+      kb_mod_com = pressed;
+      return 0;
+    }
+    
+    // Search for the translation for this keycode.
+    uint8_t index = 0;
+    while(pgm_read_byte(&keycodes[index].usb) != 0) {
+      if (pgm_read_byte(&keycodes[index].adb) == adb_code) {
+	kb_key = pgm_read_byte(&keycodes[index].usb);
+      }
+      index++;
     }
 
     // Zero out the value if the key was being released.
-    kb_key = kb_key && pressed;
+    if (!pressed) {
+      kb_key = 0;
+    }
 
     return 0;
 }
 
-/** \brief Get an HID report
+/** \brief Return modifiers.
  *
- * Creates an HID report according to the internal keyboard state.
+ * Returns a byte representing the current set of pressed modifiers that should
+ * be used in the keyboard HID report. The layout of this byte is:
  *
- * @param[in]   buffer  Pointer to a 2x8b array.
- * @return      0 for success.   
+ * \verbatim
+ * 0b00000000
+ *   ||||||||_ left control
+ *   |||||||__ left shift
+ *   ||||||___ left alt (command)
+ *   |||||____ left gui (option)
+ *   ||||_____ right control
+ *   |||______ right shift
+ *   ||_______ right alt (command)
+ *   |________ right gui (option)
+ * \endverbatim
+ *
+ * Unfortunately the Apple Extended Keyboard II will return the same keycode
+ * for both left and right keys. This function will only populate the left
+ * modifier keys.
+ *
+ * @return uint8_t modifiers
  */
-uint8_t kb_get_hid(uint8_t *buffer)
+uint8_t kb_usbhid_modifiers()
 {
-    // Set the lower byte of the buffer to the current key.
-    buffer[0] = kb_key;
+  uint8_t mods = 0;
 
-    // Set the high byte of the buffer to the current set of modifiers.
-    buffer[1] = 0;
-    buffer[1] |= kb_mod_shift & USB_MOD_SHIFT_LEFT;
-    buffer[1] |= kb_mod_ctrl & USB_MOD_CONTROL_LEFT;
-    buffer[1] |= kb_mod_opt & USB_MOD_GUI_LEFT;
-    buffer[1] |= kb_mod_com & USB_MOD_ALT_LEFT;
+  mods |= kb_mod_ctrl;
+  mods |= kb_mod_shift << 1;
+  mods |= kb_mod_com << 2;
+  mods |= kb_mod_opt << 3;
 
-    return 0;
+  return mods;
+}
+
+/** \brief Return current keys in USB representation.
+ *
+ * Returns an array of the currently pressed keys for use in an HID report.
+ */
+void kb_usbhid_keys(uint8_t *keys)
+{
+  // Right now I only support one key at a time, so this is easy.
+  keys[0] = kb_key;
+
+  return;
 }
 
 /** \brief Convert keycode to char
  *
  * Converts a keycode returned from polling the keyboard into a char. Currently
- * only supports printable ASCII characters that don't need the shift key.
+ * only supports keys with printable ASCII characters and does not handle the
+ * shift key. Any unsupported keycodes will return ' '.
  * 
- * @param[in]   d 8b value to decode.
+ * @param[in]   keycode value returned from keyboard
  * @return      char representation.
  */
-char kb_dtoa(uint8_t d)
+char kb_dtoa(uint8_t keycode)
 {
-    switch(d)
-    {
-        // Row 1
-        case 0x32: return '~'; break;
-        case 0x12: return '1'; break;
-        case 0x13: return '2'; break;
-        case 0x14: return '3'; break;
-        case 0x15: return '4'; break;
-        case 0x17: return '5'; break;
-        case 0x16: return '6'; break;
-        case 0x1a: return '7'; break;
-        case 0x1c: return '8'; break;
-        case 0x19: return '9'; break;
-        case 0x1d: return '0'; break;
-        case 0x1b: return '-'; break;
-        case 0x18: return '+'; break;
-        case 0x33: return '\b'; break;
+  uint8_t pressed = ~keycode & 0x80;
+  uint8_t adb_code = keycode & 0x7f;
 
-        // Row 2
-        case 0x30: return '\t'; break;
-        case 0x0c: return 'q'; break;
-        case 0x0d: return 'w'; break;
-        case 0x0e: return 'e'; break;
-        case 0x0f: return 'r'; break;
-        case 0x11: return 't'; break;
-        case 0x10: return 'y'; break;
-        case 0x20: return 'u'; break;
-        case 0x22: return 'i'; break;
-        case 0x1f: return 'o'; break;
-        case 0x23: return 'p'; break;
-        case 0x21: return '['; break;
-        case 0x1e: return ']'; break;
-        case 0x2a: return '\\'; break;
+  if (!pressed) {
+    return ' ';
+  }
 
-        // Row 3
-        case 0x00: return 'a'; break;
-        case 0x01: return 's'; break;
-        case 0x02: return 'd'; break;
-        case 0x03: return 'f'; break;
-        case 0x05: return 'g'; break;
-        case 0x04: return 'h'; break;
-        case 0x26: return 'j'; break;
-        case 0x28: return 'k'; break;
-        case 0x25: return 'l'; break;
-        case 0x29: return ';'; break;
-        case 0x27: return '\''; break;
-        case 0x24: return '\n'; break;
-
-        // Row 4
-        case 0x06: return 'z'; break;
-        case 0x07: return 'x'; break;
-        case 0x08: return 'c'; break;
-        case 0x09: return 'v'; break;
-        case 0x0b: return 'b'; break;
-        case 0x2d: return 'n'; break;
-        case 0x2e: return 'm'; break;
-        case 0x2b: return ','; break;
-        case 0x2f: return '.'; break;
-        case 0x2c: return '/'; break;
-
-        // Row 5
-        case 0x31: return ' '; break;
-
-        default: break;
+  // Search for a translation.
+  uint8_t index = 0;
+  while(pgm_read_byte(&keycodes[index].adb) != 0) {
+    if (pgm_read_byte(&keycodes[index].adb) == adb_code) {
+      return pgm_read_byte(&keycodes[index].ascii);
     }
-
-    return '!';
+    index++;
+  }
+  
+  return ' ';
 }
 
