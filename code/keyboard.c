@@ -205,7 +205,7 @@ uint8_t kb_register(uint8_t keycode)
 {
     // The top bit of the keycode tells us whether a key was pressed or
     // released. It is 0 when pressed and 1 when released.
-    uint8_t pressed = ~keycode & 0x80;
+    uint8_t pressed = (~keycode & 0x80) >> 7;
     uint8_t adb_code = keycode & 0x7f;
 
 #ifdef DEBUG
