@@ -49,10 +49,10 @@ int main(void)
     usb_init();
 
     // Initialize ADB
-    //uint8_t adb_buff[8];
-    //uint8_t adb_len;
-    //uint8_t adb_status;
-    //adb_init();
+    uint8_t adb_buff[8];
+    uint8_t adb_len;
+    uint8_t adb_status;
+    adb_init();
 
     uart_init();
     stdout = &uart_str;
@@ -60,27 +60,34 @@ int main(void)
     printf("ADBUSB v0.4\n");
     printf("Copyright 2011-12 Devrin Talen\n");
 
-    uint8_t dbg_index = 0;
+    //uint8_t dbg_index = 0;
     while(1)
     {
-      //_delay_ms(10.0);
-      //adb_status = adb_poll(adb_buff, &adb_len);
-      //wdt_reset();
+      _delay_ms(10.0);
+      adb_status = adb_poll(adb_buff, &adb_len);
+      if (adb_len > 0) {
+      /* 	if (~adb_buff[0] & 0x80) { */
+      /* 	  printf("%c", kb_dtoa(adb_buff[0])); */
+      /* 	} */
+	kb_register(adb_buff[0]);
+      }
+      wdt_reset();
       usbPoll();
       if (usbInterruptIsReady()) {
-	if (dbg_index == 2) {
-	  keybReportBuffer.b[0] = 4;
-	} else if (dbg_index == 4) {
-	  keybReportBuffer.b[0] = 5;
-	} else if (dbg_index == 6) {
-	  keybReportBuffer.b[0] = 6;
-	} else if (dbg_index == 8) {
-	  keybReportBuffer.b[0] = 7;
-	}
-	dbg_index++;
-	DBG1(0x03, 0, 0);   /* debug output: interrupt report prepared */
-	usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
-	keybReportBuffer.b[0] = 0;
+      	/* if (dbg_index == 2) { */
+      	/*   keybReportBuffer.b[0] = 4; */
+      	/* } else if (dbg_index == 4) { */
+      	/*   keybReportBuffer.b[0] = 5; */
+      	/* } else if (dbg_index == 6) { */
+      	/*   keybReportBuffer.b[0] = 6; */
+      	/* } else if (dbg_index == 8) { */
+      	/*   keybReportBuffer.b[0] = 7; */
+      	/* } */
+      	/* dbg_index++; */
+	keybReportBuffer.meta = kb_usbhid_modifiers();
+	kb_usbhid_keys(keybReportBuffer.b);
+      	usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
+      	keybReportBuffer.b[0] = 0;
       }
     }
 

@@ -34,6 +34,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <avr/pgmspace.h>
 
 /// Represent a translation from ADB to USB or ascii
@@ -204,8 +205,15 @@ uint8_t kb_register(uint8_t keycode)
 {
     // The top bit of the keycode tells us whether a key was pressed or
     // released. It is 0 when pressed and 1 when released.
-    uint8_t pressed = ~keycode && 0x80;
+    uint8_t pressed = ~keycode & 0x80;
     uint8_t adb_code = keycode & 0x7f;
+
+#ifdef DEBUG
+    printf("kb_register() debug:\n");
+    printf("- keycode: %x\n", keycode);
+    printf("- pressed: %x\n", pressed);
+    printf("- adb_code: %x\n", adb_code);
+#endif
 
     // Modifier keys are handled separately.
     switch(adb_code) {
@@ -236,6 +244,10 @@ uint8_t kb_register(uint8_t keycode)
     if (!pressed) {
       kb_key = 0;
     }
+
+#ifdef DEBUG
+    printf("- kb_key: %x\n", kb_key);
+#endif
 
     return 0;
 }
@@ -279,7 +291,7 @@ uint8_t kb_usbhid_modifiers()
  *
  * Returns an array of the currently pressed keys for use in an HID report.
  */
-void kb_usbhid_keys(uint8_t *keys)
+void kb_usbhid_keys(char *keys)
 {
   // Right now I only support one key at a time, so this is easy.
   keys[0] = kb_key;
@@ -307,7 +319,7 @@ char kb_dtoa(uint8_t keycode)
 
   // Search for a translation.
   uint8_t index = 0;
-  while(pgm_read_byte(&keycodes[index].adb) != 0) {
+  while(pgm_read_byte(&keycodes[index].usb) != 0) {
     if (pgm_read_byte(&keycodes[index].adb) == adb_code) {
       return pgm_read_byte(&keycodes[index].ascii);
     }

@@ -22,5 +22,8 @@
 #define __inc_keyboard__
 
 char kb_dtoa(uint8_t d);
+void kb_usbhid_keys(char *keys);
+uint8_t kb_usbhid_modifiers();
+uint8_t kb_register(uint8_t keycode);
 
 #endif
