@@ -63,7 +63,7 @@ int main(void)
     //uint8_t dbg_index = 0;
     while(1)
     {
-      _delay_ms(10.0);
+      //_delay_ms(10.0);
       adb_status = adb_poll(adb_buff, &adb_len);
       if (adb_len > 0) {
       /* 	if (~adb_buff[0] & 0x80) { */

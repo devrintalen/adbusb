@@ -37,6 +37,8 @@
 #include <stdio.h>
 #include <avr/pgmspace.h>
 
+#define DEBUG 0
+
 /// Represent a translation from ADB to USB or ascii
 struct keycode_translation {
   unsigned char adb;
