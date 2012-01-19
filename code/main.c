@@ -43,17 +43,19 @@ static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 */
 int main(void)
 {
+  // Initialize watchdog timer.
   wdt_disable();
 
-  // Initialize USB
+  // Initialize USB.
   usb_init();
 
-  // Initialize ADB
+  // Initialize ADB.
   uint8_t adb_buff[8];
   uint8_t adb_len;
   uint8_t adb_status;
   adb_init();
 
+  // Initialize UART.
   uart_init();
   stdout = &uart_str;
     
@@ -61,11 +63,12 @@ int main(void)
   printf("Copyright 2011-12 Devrin Talen\n");
 
   while(1) {
+    /* ADB phase. */
     adb_status = adb_poll(adb_buff, &adb_len);
     if (adb_len > 0) {
       kb_register(adb_buff[0]);
     }
-    wdt_reset();
+    /* USB phase. */
     usbPoll();
     if (usbInterruptIsReady()) {
       keybReportBuffer.meta = kb_usbhid_modifiers();
