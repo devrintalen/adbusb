@@ -108,3 +108,4 @@ References
 ==========
 1.  http://en.wikipedia.org/wiki/Apple_Desktop_Bus
 2.  http://mcosre.sourceforge.net/docs/adb_intro.html
+3.  http://geekhack.org/showwiki.php?title=Island:14290
