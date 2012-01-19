@@ -205,53 +205,53 @@ uint8_t kb_key;
  */
 uint8_t kb_register(uint8_t keycode)
 {
-    // The top bit of the keycode tells us whether a key was pressed or
-    // released. It is 0 when pressed and 1 when released.
-    uint8_t pressed = (~keycode & 0x80) >> 7;
-    uint8_t adb_code = keycode & 0x7f;
+  // The top bit of the keycode tells us whether a key was pressed or
+  // released. It is 0 when pressed and 1 when released.
+  uint8_t pressed = (~keycode & 0x80) >> 7;
+  uint8_t adb_code = keycode & 0x7f;
 
 #ifdef DEBUG
-    printf("kb_register() debug:\n");
-    printf("- keycode: %x\n", keycode);
-    printf("- pressed: %x\n", pressed);
-    printf("- adb_code: %x\n", adb_code);
+  printf("kb_register() debug:\n");
+  printf("- keycode: %x\n", keycode);
+  printf("- pressed: %x\n", pressed);
+  printf("- adb_code: %x\n", adb_code);
 #endif
 
-    // Modifier keys are handled separately.
-    switch(adb_code) {
-    case 0x38:
-      kb_mod_shift = pressed;
-      return 0;
-    case 0x36:
-      kb_mod_ctrl = pressed;
-      return 0;
-    case 0x3a: 
-      kb_mod_opt = pressed;
-      return 0;
-    case 0x37: 
-      kb_mod_com = pressed;
-      return 0;
-    }
-    
-    // Search for the translation for this keycode.
-    uint8_t index = 0;
-    while(pgm_read_byte(&keycodes[index].usb) != 0) {
-      if (pgm_read_byte(&keycodes[index].adb) == adb_code) {
-	kb_key = pgm_read_byte(&keycodes[index].usb);
-      }
-      index++;
-    }
-
-    // Zero out the value if the key was being released.
-    if (!pressed) {
-      kb_key = 0;
-    }
-
-#ifdef DEBUG
-    printf("- kb_key: %x\n", kb_key);
-#endif
-
+  // Modifier keys are handled separately.
+  switch(adb_code) {
+  case 0x38:
+    kb_mod_shift = pressed;
     return 0;
+  case 0x36:
+    kb_mod_ctrl = pressed;
+    return 0;
+  case 0x3a: 
+    kb_mod_opt = pressed;
+    return 0;
+  case 0x37: 
+    kb_mod_com = pressed;
+    return 0;
+  }
+    
+  // Search for the translation for this keycode.
+  uint8_t index = 0;
+  while(pgm_read_byte(&keycodes[index].usb) != 0) {
+    if (pgm_read_byte(&keycodes[index].adb) == adb_code) {
+      kb_key = pgm_read_byte(&keycodes[index].usb);
+    }
+    index++;
+  }
+
+  // Zero out the value if the key was being released.
+  if (!pressed) {
+    kb_key = 0;
+  }
+
+#ifdef DEBUG
+  printf("- kb_key: %x\n", kb_key);
+#endif
+
+  return 0;
 }
 
 /** \brief Return modifiers.

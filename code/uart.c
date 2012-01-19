@@ -26,18 +26,18 @@
 /// Initialize driver resources
 void uart_init(void)
 {
-    UBRRL = 103; // 9600 baud
-    UCSRB = _BV(TXEN); // enable tx
+  UBRRL = 103; // 9600 baud
+  UCSRB = _BV(TXEN); // enable tx
 }
 
 /// Send a single character on the UART.
 int uart_putchar(char c, FILE *stream)
 {
-    if (c == '\n')
-        uart_putchar('\r', stream);
+  if (c == '\n')
+    uart_putchar('\r', stream);
 
-    loop_until_bit_is_set(UCSRA, UDRE);
-    UDR = c;
+  loop_until_bit_is_set(UCSRA, UDRE);
+  UDR = c;
 
-    return 0;
+  return 0;
 }
