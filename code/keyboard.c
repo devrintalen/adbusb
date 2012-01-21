@@ -210,7 +210,7 @@ uint8_t kb_register(uint8_t keycode)
   uint8_t pressed = (~keycode & 0x80) >> 7;
   uint8_t adb_code = keycode & 0x7f;
 
-#ifdef DEBUG
+#if DEBUG
   printf("kb_register() debug:\n");
   printf("- keycode: %x\n", keycode);
   printf("- pressed: %x\n", pressed);
@@ -247,7 +247,7 @@ uint8_t kb_register(uint8_t keycode)
     kb_key = 0;
   }
 
-#ifdef DEBUG
+#if DEBUG
   printf("- kb_key: %x\n", kb_key);
 #endif
 
