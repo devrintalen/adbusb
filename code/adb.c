@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
@@ -174,6 +173,8 @@ int8_t adb_rx()
   uint8_t ticks = 0;
   uint8_t last_bit;
 
+  PORTA &= ~(_BV(2));
+
   // Initialize resources
   DDRB = 0x00;
   adb_rx_len = 0;
@@ -182,16 +183,16 @@ int8_t adb_rx()
   // Begin a busy-wait loop to delay for up to 240us. If the data line drops
   // low during this time then discard the first bit and begin receiving
   // data.
-  PORTA = 0x2;
   while(delay)
     {
       _delay_us(1.0);
       delay--;
       if (bit_is_clear(ADB_PIN, 2)) {
 	receiving = 1;
+	PORTA &= ~(_BV(3));
 	while(bit_is_clear(ADB_PIN, 2)) {};
 	while(bit_is_set(ADB_PIN, 2)) {};
-	PORTA = 0x6;
+	PORTA |= _BV(3);
 	break;
       }
     }
@@ -204,10 +205,12 @@ int8_t adb_rx()
       // This loop counts the duration of the low pulse. The time it takes
       // is used to determine if the device is sending a 0 or 1.
       ticks = 0;
+      PORTA &= ~(_BV(4));
       while(bit_is_clear(ADB_PIN, 2)) {
 	_delay_us(1.0);
 	ticks++;
       }
+      PORTA |= _BV(4);
 
       // Based on the length of the low portion of the bit we know if it's a
       // 0 or 1. A 1 will be 30us, and a 0 will be 45us.
@@ -216,7 +219,6 @@ int8_t adb_rx()
       } else {
 	last_bit = 1;
       }
-      PORTA = last_bit;
 
       // Store the bit into the buffer. This stores the bits in increasing
       // bit position, meaning that the data is interpreted as being sent LSB
@@ -224,7 +226,7 @@ int8_t adb_rx()
       // TODO Figure out if data is MSB or LSB first (probably MSB).
       // TODO This will fail when the device sends 8B because of the stop bit
       uint8_t i = adb_rx_len / 8;
-      assert(i <= 8);
+      /* assert(i <= 8); */
       adb_rx_buff[i] = (adb_rx_buff[i] << 1) | last_bit;
       adb_rx_len++;
 
@@ -234,23 +236,25 @@ int8_t adb_rx()
       // next one.
       int8_t remaining = 80 - ticks;
       ticks = 0;
+      PORTA &= ~(_BV(5));
       while(bit_is_set(ADB_PIN, 2) && (ticks < remaining)) {
 	_delay_us(1.0);
 	ticks++;
       }
+      PORTA |= _BV(5);
 
       // If the data line still hasn't gone low, and we've waited for the
       // next bit, then the device has stopped transmitting and we're done.
       // We verify that the last bit sent is indeed the "0" stop bit and
       // shave the bit off the bit count.
       if (ticks == remaining) {
-	assert(last_bit == 0);
+	/* assert(last_bit == 0); */
 	adb_rx_len = adb_rx_len - 1;
 	receiving = 0;
       }
     }
 
-  PORTA = 0x2;
+  PORTA |= _BV(2);
 
   // Return 0 if we received data
   if (adb_rx_len)
@@ -281,7 +285,7 @@ int8_t adb_rx()
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-  //PORTC = ~PORTC;
+  PORTA &= ~(_BV(1));
   DDRB = 0xff;
   // command byte
   uint8_t packet = 0;
@@ -306,6 +310,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   // Release line
   ADB_PORT = ADB_TX_HIGH;
 
+  PORTA |= _BV(1);
   return 0;
 }
 
@@ -328,6 +333,7 @@ int8_t adb_init(void)
   // Configure port for output
   DDRB = 0xFF;
   DDRA = 0xFF;
+  PORTA = 0xFF;
   //DDRC = 0xFF;
 
   // Reach steady state then reset devices
@@ -361,11 +367,9 @@ int8_t adb_init(void)
 */
 int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
-  PORTA = 0x1;
-  _delay_us(5.0);
-  PORTA = 0x0;
-
   uint8_t poll_result;
+
+  PORTA &= ~(_BV(0));
 
   // Initialize length
   *len = 0;
@@ -381,6 +385,8 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
       *len = adb_rx_len;
       memcpy((void*)buff, (void*)adb_rx_buff, 8*sizeof(uint8_t));
     }
+
+  PORTA |= _BV(0);
 
   return poll_result;
 }

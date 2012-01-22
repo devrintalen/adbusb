@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
 
 #include "adb.h"
 #include "keyboard.h"

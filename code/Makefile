@@ -26,7 +26,7 @@ CPPFLAGS=-mmcu=$(AVR) -DF_CPU=16000000 -Iusbdrv -I. -DDEBUG_LEVEL=0
 OBJCOPY=avr-objcopy
 OBJCOPYFLAGS=-j .text -j .data -O ihex
 PROGRAMMER=avrdude
-PROGFLAGS=-q -p m32 -P /dev/ttyUSB0 -c stk500v2
+PROGFLAGS=-p m32 -P /dev/ttyUSB0 -c stk500v2
 
 all: main.hex
 
@@ -42,6 +42,11 @@ install: main.hex
 
 fixfuse:
 	$(PROGRAMMER) $(PROGFLAGS) -e -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m
-	
+
+# Sometimes the sck value gets all screwed up and the STK500 will program
+# *very* slowly. To fix this use 'make terminal' and then do 'sck 10'.
+terminal:
+	$(PROGRAMMER) $(PROGFLAGS) -t
+
 clean:
 	rm -f *.o usbdrv/*.o *.elf *.hex
