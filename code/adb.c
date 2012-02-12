@@ -85,70 +85,119 @@ uint8_t adb_rx_inprogress;
 /// Current received bit
 int8_t adb_rx_bit;
 
-/// Send a bit
-/**
-   A bit is 100 microseconds long and starts as a low signal and gets set at
-   some point. The point at which it becomes high depends on if a 0 or 1 is
-   being transmitted.
+/// State values
+enum adb_states = {
+  ADB_STATE_IDLE,
+  ADB_STATE_TX_ATTN,
+  ADB_STATE_TX_SYNC,
+  ADB_STATE_TX_BIT_LOW,
+  ADB_STATE_TX_BIT_HIGH,
+};
+/// Current state
+uint8_t adb_state;
 
-   - A 0 is a 65μs low pulse followed by a 35μs high pulse
-   - A 1 is a 35μs low pulse followed by a 65μs high pulse
+// State information for transmitting a byte
+/// Byte to transmit
+uint8_t adb_tx_data;
+/// Index of bit to transmit
+uint8_t adb_tx_index;
 
-   @param[in]  bit Value to transmit.
-   @return     0 for success.
-*/
-int8_t adb_txbit(uint8_t bit)
+ISR(TIMER0_COMP_VECTOR)
 {
-  // Lower line
-  ADB_PORT = ADB_TX_LOW;
-
-  // Delay for: 0 -> 65us, 1 -> 35us
-  if (bit == 0) {
-    ADB_DELAY_65;
-  } else {
-    ADB_DELAY_35;
-  }
-
-  // Raise line
-  ADB_PORT = ADB_TX_HIGH;
-
-  // Delay for: 0 -> 35us, 1 -> 65us
-  if (bit == 0) {
-    ADB_DELAY_35;
-  } else {
-    ADB_DELAY_65;
-  }
-
-  return 0;
-}
-
-/// Send a command byte
-/**
-   Just a wrapper to transmit eight bits.
-
-   @param[in]  command 8b value to transmit.
-   @return     0 for success.
-*/
-int8_t adb_txbyte(uint8_t command)
-{
-  // Loop iterator
-  uint8_t i;
-
-  // For each of the 8 bits
-  for(i = 0; i < 8; i++)
-    {
-      // Send leftmost bit
-      if (command & 0x80) {
-	adb_txbit(1);
-      } else {
-	adb_txbit(0);
-      }
-
-      command = command << 1;
+  switch(adb_state) {
+  case ADB_STATE_TX_ATTN:
+    adb_state = ADB_STATE_TX_SYNC;
+    ADB_PORT = ADB_TX_HIGH;
+    // Set up timer for 70us.
+    TCCR0 = (TCCR0 & 0xF8) | 0x1; // prescalar = 8
+    TCNT0 = 0;
+    OCR0 = 70 / 0.5;
+    break;
+  case ADB_STATE_TX_SYNC:
+  case ADB_STATE_TX_BIT_HIGH:
+    if (adb_tx_index > 8) {
+      adb_state = ADB_STATE_IDLE;
+      ADB_PORT = ADB_TX_HIGH;
+      TIMSK0 &= ~(_BV(1));
+      break;
     }
+    ADB_PORT = ADB_TX_LOW;
+    adb_state = ADB_STATE_TX_BIT_LOW;
+    // Set up timer for either 35us or 65us.
+    TCNT0 = 0;
+    if (adb_tx_index == 8) {
+      OCR0 = 65 / 0.5;
+    } else if ((adb_tx_data >> adb_tx_index) & 0x1 == 0) {
+      OCR0 = 65 / 0.5;
+    } else {
+      OCR0 = 35 / 0.5;
+    }
+    break;
+  case ADB_STATE_TX_BIT_LOW:
+    ADB_PORT = ADB_TX_HIGH;
+    adb_state = ADB_STATE_TX_BIT_HIGH;
+    // Set up timer for either 65us or 35us.
+    TCNT0 = 0;
+    if (adb_tx_index == 8) {
+      OCR0 = 35 / 0.5;
+    } else if ((adb_tx_data >> adb_tx_index) & 0x1 == 0) {
+      OCR0 = 35 / 0.5;
+    } else {
+      OCR0 = 65 / 0.5;
+    }
+    adb_tx_index++;
+    break;
+  default:
+    break;
+  }
 
+  return;
+}
+
+/**
+   Sends a command packet with the supplied arguments. Takes care of
+   asserting the attention and sync signals and the stop bit. The algorithm
+   is:
+
+   -# Assert attention signal (800us).
+   -# Assert sync signal (70us).
+   -# Send command byte (8 * 100us).
+   -# Send stop bit (100us).
+   -# Release line.
+
+   This is handled by using hardware timer 0 to make this call non-blocking.
+   Once the attention signal has been started this call will return.
+
+   @param[in]  address Device address.
+   @param[in]  command Command to send.
+   @param[in]  reg     Register to read/write.
+   @return     0 for success.
+*/
+int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
+{
+  PORTA &= ~(_BV(1));
+  DDRB = 0xff;
+
+  // Construct command byte
+  adb_tx_data = 0;
+  adb_tx_data |= address << 4;
+  adb_tx_data |= command << 2;
+  adb_tx_data |= reg;
+  adb_tx_index = 0;
+
+  // Set output
+  ADB_PORT = ADB_TX_LOW;
+  // Kick off the timer for 800us
+  TCCR0 = (TCCR0 & 0xF8) | 0x3; // prescalar = 64
+  TCNT0 = 0;
+  OCR0 = 800 / 4;
+  // Set the state
+  adb_state = ADB_STATE_TX_ATTN;
+
+  PORTA |= _BV(1);
   return 0;
 }
+
 
 /// Receive a data packet.
 /**
@@ -263,56 +312,6 @@ int8_t adb_rx()
     return 1;
 }
 
-/// Send a command packet.
-/**
-   Constructs a command packet out of the supplied arguments. Takes care of
-   asserting the attention and sync signals, and the stop bit. The algorithm
-   is:
-
-   -# Assert attention signal (800us).
-   -# Assert sync signal (70us).
-   -# Send command byte (8 * 100us).
-   -# Send stop bit (100us).
-   -# Release line.
-
-   This takes approximately 1770us, or 1.7ms. This is longer than a USB frame,
-   so this needs to be taken into account.
-
-   @param[in]  address Device address.
-   @param[in]  command Command to send.
-   @param[in]  reg     Register to read/write.
-   @return     0 for success.
-*/
-int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
-{
-  PORTA &= ~(_BV(1));
-  DDRB = 0xff;
-  // command byte
-  uint8_t packet = 0;
-  packet |= address << 4;
-  packet |= command << 2;
-  packet |= reg;
-
-  // Send attention signal
-  ADB_PORT = ADB_TX_LOW;
-  ADB_DELAY_800;
-
-  // Send sync signal
-  ADB_PORT = ADB_TX_HIGH;
-  ADB_DELAY_70;
-
-  // Send command byte
-  adb_txbyte(packet);
-
-  // Send stop bit
-  adb_txbit(0);
-
-  // Release line
-  ADB_PORT = ADB_TX_HIGH;
-
-  PORTA |= _BV(1);
-  return 0;
-}
 
 /// Initializes resources used by the ADB host interface.
 /**
