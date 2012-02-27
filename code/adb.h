@@ -21,6 +21,22 @@
 #ifndef __inc_adb__
 #define __inc_adb__
 
+/// Output port
+#define ADB_PORT PORTB
+/// Input pin
+#define ADB_PIN PINB
+/// Output low value
+#define ADB_TX_0 0x0
+/// Output high value
+#define ADB_TX_1 0x4
+
+/// 2b code for a flush command.
+#define ADB_CMD_FLUSH 0
+/// 2b code for a listen command.
+#define ADB_CMD_LISTEN 2
+/// 2b code for a talk command.
+#define ADB_CMD_TALK 3
+
 int8_t adb_poll(uint8_t *buff, uint8_t *len);
 int8_t adb_init(void);
 
