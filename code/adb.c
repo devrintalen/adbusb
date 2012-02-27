@@ -50,7 +50,7 @@ uint8_t adb_state;
 /// Byte to transmit
 uint8_t adb_tx_data;
 /// Index of bit to transmit
-uint8_t adb_tx_index;
+int8_t adb_tx_index;
 
 // State information for receiving data
 /// Number of bits received
@@ -77,7 +77,7 @@ ISR(TIMER0_COMP_vect)
 
   case ADB_STATE_TX_SYNC:
   case ADB_STATE_TX_BIT_HIGH:
-    if (adb_tx_index > 8) {
+    if (adb_tx_index == -2) {
       adb_state = ADB_STATE_RX_WAIT;
       // Set up port to receive data
       ADB_PORT = ADB_TX_1;
@@ -92,7 +92,7 @@ ISR(TIMER0_COMP_vect)
     adb_state = ADB_STATE_TX_BIT_LOW;
     // Set up timer for either 35us or 65us.
     TCNT0 = 0;
-    if (adb_tx_index == 8) {
+    if (adb_tx_index == -1) {
       OCR0 = 65 / 0.5;
     } else if (((adb_tx_data >> adb_tx_index) & 0x1) == 0) {
       OCR0 = 65 / 0.5;
@@ -106,20 +106,26 @@ ISR(TIMER0_COMP_vect)
     adb_state = ADB_STATE_TX_BIT_HIGH;
     // Set up timer for either 65us or 35us.
     TCNT0 = 0;
-    if (adb_tx_index == 8) {
+    if (adb_tx_index == -1) {
       OCR0 = 35 / 0.5;
     } else if (((adb_tx_data >> adb_tx_index) & 0x1) == 0) {
       OCR0 = 35 / 0.5;
     } else {
       OCR0 = 65 / 0.5;
     }
-    adb_tx_index++;
+    adb_tx_index--;
     break;
 
   case ADB_STATE_RX_WAIT:
     // 240us have elapsed since the stop bit. If an external interrupt
     // had fired by this point the state would have been modified and
     // we wouldn't get here. Re-initialize everything.
+    // ... fall through to the next state since they're the same...
+
+  case ADB_STATE_RX_HIGH:
+    // About 128us have elapsed since the last bit received had started.
+    // The ADB device has stopped sending data and we need to stop
+    // receiving data.
     TIMSK &= ~(_BV(1)); // disable timer interrupt
     adb_state = ADB_STATE_IDLE;
     break;
@@ -160,7 +166,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   adb_tx_data |= address << 4;
   adb_tx_data |= command << 2;
   adb_tx_data |= reg;
-  adb_tx_index = 0;
+  adb_tx_index = 7; // data is sent MSB first
 
   // Start the state machine
   adb_state = ADB_STATE_TX_ATTN;
@@ -180,22 +186,15 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
    transmitting data to the processor.
 */
 ISR(INT2_vect) {
-  if (adb_state == ADB_STATE_RX_WAIT) {
-    // An interrupt occurred and we just finished with TX code (or the
-    // interrupt is coming out of nowhere). Check TCNT0 to see if we're
-    // 240us or less from the end of TX code.
-    if (TCNT0 > (240 / 4)) {
-      // It's been too long since TX code. Ignore the interrupt.
-      return;
-    } else {
-      // Initialize resources for receiving data.
-      TIMSK &= ~(_BV(1));
-      TCCR0 = 0xa;
-      adb_state = ADB_STATE_RX_LOW;
-    }
-  }
-
   switch (adb_state) {
+
+  case ADB_STATE_RX_WAIT:
+    TIMSK &= ~(_BV(1));
+    TCCR0 = 0xa;
+    OCR0 = 255;
+    adb_rx_count = 0;
+    // Purposefully fall through to the next state...
+
   case ADB_STATE_RX_LOW:
     // Begin counting from 0 to determine how long the low pulse is.
     TCNT0 = 0;
