@@ -84,6 +84,11 @@ ISR(TIMER0_COMP_vect)
       // Set up port to receive data
       ADB_PORT = ADB_TX_1;
       DDRB = 0x00;
+      // Enable INT2 to catch a falling edge
+      GICR &= ~(_BV(5));
+      MCUCSR &= ~(_BV(6));
+      GIFR |= _BV(5);
+      GICR |= _BV(5);
       // Start counting time and disable the interrupt
       TCCR0 = (TCCR0 & 0xF8) | 0x3; // prescalar = 64
       TCNT0 = 0;
@@ -130,6 +135,8 @@ ISR(TIMER0_COMP_vect)
     // receiving data.
     TIMSK &= ~(_BV(1)); // disable timer interrupt
     adb_state = ADB_STATE_IDLE;
+    // Disable INT2
+    GICR &= ~(_BV(5));
     PORTA |= _BV(2);
     break;
 
@@ -207,6 +214,11 @@ ISR(INT2_vect) {
     // Begin counting from 0 to determine how long the low pulse is.
     TCNT0 = 0;
     adb_state = ADB_STATE_RX_HIGH;
+    // Enable INT2 to catch a rising edge
+    GICR &= ~(_BV(5));
+    MCUCSR |= _BV(6);
+    GIFR |= _BV(5);
+    GICR |= _BV(5);
     break;
 
   case ADB_STATE_RX_HIGH:
@@ -221,6 +233,11 @@ ISR(INT2_vect) {
     }
     adb_rx_data[adb_rx_count / 8] |= adb_rx_bit << (adb_rx_count % 8);
     adb_state = ADB_STATE_RX_LOW;
+    // Enable INT2 to catch a falling edge
+    GICR &= ~(_BV(5));
+    MCUCSR &= ~(_BV(6));
+    GIFR |= _BV(5);
+    GICR |= _BV(5);
     break;
 
   default:
