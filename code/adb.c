@@ -89,7 +89,7 @@ ISR(TIMER0_COMP_vect)
       MCUCSR &= ~(_BV(6));
       GIFR |= _BV(5);
       GICR |= _BV(5);
-      // Start counting time and disable the interrupt
+      // Start counting time, up to 240us
       TCCR0 = (TCCR0 & 0xF8) | 0x3; // prescalar = 64
       TCNT0 = 0;
       OCR0 = 240 / 4;
@@ -129,7 +129,7 @@ ISR(TIMER0_COMP_vect)
     // we wouldn't get here. Re-initialize everything.
     // ... fall through to the next state since they're the same...
 
-  case ADB_STATE_RX_HIGH:
+  case ADB_STATE_RX_LOW:
     // About 128us have elapsed since the last bit received had started.
     // The ADB device has stopped sending data and we need to stop
     // receiving data.
@@ -203,9 +203,8 @@ ISR(INT2_vect) {
   switch (adb_state) {
 
   case ADB_STATE_RX_WAIT:
-    TIMSK &= ~(_BV(1));
     TCCR0 = 0xa;
-    OCR0 = 255;
+    OCR0 = 0;
     adb_rx_count = 0;
     PORTA &= ~(_BV(2));
     // Purposefully fall through to the next state...
