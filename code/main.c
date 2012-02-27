@@ -66,6 +66,7 @@ int main(void)
     adb_status = adb_poll(adb_buff, &adb_len);
     if (adb_len > 0) {
       kb_register(adb_buff[0]);
+      printf("-I- %d bits %x\n", adb_len, adb_buff[0]);
     }
     /* USB phase. */
     usbPoll();

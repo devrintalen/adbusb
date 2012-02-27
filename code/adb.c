@@ -81,6 +81,7 @@ ISR(TIMER0_COMP_vect)
   case ADB_STATE_TX_BIT_HIGH:
     if (adb_tx_index == -2) {
       adb_state = ADB_STATE_RX_WAIT;
+      adb_rx_count = 0;
       // Set up port to receive data
       ADB_PORT = ADB_TX_1;
       DDRB = 0x00;
@@ -205,7 +206,6 @@ ISR(INT2_vect) {
   case ADB_STATE_RX_WAIT:
     TCCR0 = 0xa;
     OCR0 = 0;
-    adb_rx_count = 0;
     PORTA &= ~(_BV(2));
     // Purposefully fall through to the next state...
 
@@ -308,6 +308,9 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
   if (adb_state != ADB_STATE_IDLE) {
     return 1;
   }
+
+  *len = adb_rx_count;
+  memcpy((void *)buff, (void *)adb_rx_data, 8 * sizeof(uint8_t));
 
   // Begin a poll command
   adb_command(last_device, ADB_CMD_TALK, 0);
