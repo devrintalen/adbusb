@@ -225,10 +225,12 @@ ISR(INT2_vect) {
     adb_rx_low_duration = TCNT0;
     // Record the bit.
     adb_rx_count++;
-    if (adb_rx_low_duration < (40 * 2)) {
+    if (adb_rx_low_duration > (40 * 2)) {
       adb_rx_bit = 0;
+      PORTA &= ~(_BV(3));
     } else {
       adb_rx_bit = 1;
+      PORTA |= _BV(3);
     }
     adb_rx_data[adb_rx_count / 8] |= adb_rx_bit << (adb_rx_count % 8);
     adb_state = ADB_STATE_RX_LOW;
