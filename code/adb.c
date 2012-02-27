@@ -64,6 +64,8 @@ uint8_t adb_rx_low_duration;
 
 ISR(TIMER0_COMP_vect)
 {
+  PORTA &= ~(_BV(1));
+
   switch (adb_state) {
 
   case ADB_STATE_TX_ATTN:
@@ -128,11 +130,14 @@ ISR(TIMER0_COMP_vect)
     // receiving data.
     TIMSK &= ~(_BV(1)); // disable timer interrupt
     adb_state = ADB_STATE_IDLE;
+    PORTA |= _BV(2);
     break;
 
   default:
     break;
   }
+
+  PORTA |= _BV(1);
 
   return;
 }
@@ -158,7 +163,7 @@ ISR(TIMER0_COMP_vect)
 */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-  PORTA &= ~(_BV(1));
+  PORTA &= ~(_BV(0));
   DDRB = 0xff;
 
   // Construct command byte
@@ -177,7 +182,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   OCR0 = 800 / 4;
   TIMSK |= _BV(1);
 
-  PORTA |= _BV(1);
+  PORTA |= _BV(0);
   return 0;
 }
 
@@ -186,6 +191,8 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
    transmitting data to the processor.
 */
 ISR(INT2_vect) {
+  PORTA &= ~(_BV(1));
+
   switch (adb_state) {
 
   case ADB_STATE_RX_WAIT:
@@ -193,6 +200,7 @@ ISR(INT2_vect) {
     TCCR0 = 0xa;
     OCR0 = 255;
     adb_rx_count = 0;
+    PORTA &= ~(_BV(2));
     // Purposefully fall through to the next state...
 
   case ADB_STATE_RX_LOW:
@@ -218,6 +226,8 @@ ISR(INT2_vect) {
   default:
     break;
   }
+
+  PORTA |= _BV(1);
 
   return;
 }
@@ -275,8 +285,6 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
 {
   uint8_t poll_result = 0;
 
-  PORTA &= ~(_BV(0));
-
   // Initialize length
   *len = 0;
 
@@ -287,8 +295,6 @@ int8_t adb_poll(uint8_t *buff, uint8_t *len)
 
   // Begin a poll command
   adb_command(last_device, ADB_CMD_TALK, 0);
-
-  PORTA |= _BV(0);
 
   return poll_result;
 }
