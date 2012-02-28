@@ -51,6 +51,8 @@ uint8_t adb_state;
 uint8_t adb_tx_data;
 /// Index of bit to transmit
 int8_t adb_tx_index;
+/// Generic variable
+uint8_t i;
 
 // State information for receiving data
 /// Number of bits received
@@ -58,7 +60,7 @@ uint8_t adb_rx_count;
 /// Last received bit
 uint8_t adb_rx_bit;
 /// Received data
-uint8_t adb_rx_data[8];
+uint8_t adb_rx_data[9];
 /// Length of last received low pulse
 uint8_t adb_rx_low_duration;
 
@@ -81,7 +83,6 @@ ISR(TIMER0_COMP_vect)
   case ADB_STATE_TX_BIT_HIGH:
     if (adb_tx_index == -2) {
       adb_state = ADB_STATE_RX_WAIT;
-      adb_rx_count = 0;
       // Set up port to receive data
       ADB_PORT = ADB_TX_1;
       DDRB = 0x00;
@@ -124,21 +125,28 @@ ISR(TIMER0_COMP_vect)
     adb_tx_index--;
     break;
 
-  case ADB_STATE_RX_WAIT:
-    // 240us have elapsed since the stop bit. If an external interrupt
-    // had fired by this point the state would have been modified and
-    // we wouldn't get here. Re-initialize everything.
-    // ... fall through to the next state since they're the same...
-
   case ADB_STATE_RX_LOW:
     // About 128us have elapsed since the last bit received had started.
     // The ADB device has stopped sending data and we need to stop
     // receiving data.
+    // Remove the start and stop bits from the data by shifting all
+    // eight bytes left by one bit.
+    for(i=0; i<8; i++) {
+      adb_rx_data[i] = (adb_rx_data[i] << 1) | ((adb_rx_data[i + 1] & 0x80) >> 7);
+    }
+    adb_rx_count = adb_rx_count - 2;
+    // ... fall through to the next state to wrap up ...
+
+  case ADB_STATE_RX_WAIT:
+    // 240us have elapsed since the stop bit. If an external interrupt
+    // had fired by this point the state would have been modified and
+    // we wouldn't get here. Re-initialize everything.
     TIMSK &= ~(_BV(1)); // disable timer interrupt
-    adb_state = ADB_STATE_IDLE;
     // Disable INT2
     GICR &= ~(_BV(5));
     PORTA |= _BV(2);
+    // All done!
+    adb_state = ADB_STATE_IDLE;
     break;
 
   default:
@@ -180,6 +188,10 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   adb_tx_data |= command << 2;
   adb_tx_data |= reg;
   adb_tx_index = 7; // data is sent MSB first
+
+  // Prepare to receive data
+  adb_rx_count = 0;
+  memset((void *)adb_rx_data, 0, 9 * sizeof(uint8_t));
 
   // Start the state machine
   adb_state = ADB_STATE_TX_ATTN;
@@ -224,7 +236,6 @@ ISR(INT2_vect) {
     // Capture the duration of the low pulse.
     adb_rx_low_duration = TCNT0;
     // Record the bit.
-    adb_rx_count++;
     if (adb_rx_low_duration > (40 * 2)) {
       adb_rx_bit = 0;
       PORTA &= ~(_BV(3));
@@ -232,7 +243,8 @@ ISR(INT2_vect) {
       adb_rx_bit = 1;
       PORTA |= _BV(3);
     }
-    adb_rx_data[adb_rx_count / 8] |= adb_rx_bit << (adb_rx_count % 8);
+    adb_rx_data[adb_rx_count / 8] |= adb_rx_bit << (7 - (adb_rx_count % 8));
+    adb_rx_count++;
     adb_state = ADB_STATE_RX_LOW;
     // Enable INT2 to catch a falling edge
     GICR &= ~(_BV(5));
@@ -282,10 +294,6 @@ int8_t adb_init(void)
   // keyboard: 0x2
   // mouse: 0x3
   last_device = 2;
-
-  // Initialize the rx resources
-  adb_rx_count = 0;
-  memset(adb_rx_data, 0, 8*sizeof(uint8_t));
 
   return 0;
 }
