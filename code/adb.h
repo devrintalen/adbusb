@@ -37,7 +37,8 @@
 /// 2b code for a talk command.
 #define ADB_CMD_TALK 3
 
-int8_t adb_poll(uint8_t *buff, uint8_t *len);
+int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg);
+uint8_t adb_read_data(uint8_t *len, uint8_t *buff);
 int8_t adb_init(void);
 
 #endif

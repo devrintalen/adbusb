@@ -49,9 +49,9 @@ int main(void)
   usb_init();
 
   // Initialize ADB.
-  uint8_t adb_buff[8];
-  uint8_t adb_len;
   uint8_t adb_status;
+  uint8_t adb_len;
+  uint8_t adb_data[8];
   adb_init();
 
   // Initialize UART.
@@ -63,10 +63,16 @@ int main(void)
 
   while(1) {
     /* ADB phase. */
-    adb_status = adb_poll(adb_buff, &adb_len);
-    if (adb_len > 0) {
-      kb_register(adb_buff[0]);
-      printf("-I- %d bits %x\n", adb_len, adb_buff[0]);
+    adb_status = adb_command(2, ADB_CMD_TALK, 0);
+    if (adb_status != 0) {
+      // adb_command() may have failed because there is outstanding
+      // data to consume. It may also just be in the middle of sending
+      // the command. Attempt to read the data.
+      adb_status = adb_read_data(&adb_len, adb_data);
+      if (adb_status == 0) {
+	kb_register(adb_data[0]);
+	printf("-I- %d bits %x\n", adb_len, adb_data[0]);
+      }
     }
     /* USB phase. */
     usbPoll();

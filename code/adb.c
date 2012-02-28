@@ -41,46 +41,71 @@ enum adb_states {
   ADB_STATE_TX_BIT_HIGH,
   ADB_STATE_RX_WAIT,
   ADB_STATE_RX_LOW,
-  ADB_STATE_RX_HIGH
+  ADB_STATE_RX_HIGH,
+  ADB_STATE_HOLD
 };
-/// Current state
+/**
+ * Current state. This ADB driver is interrupt-based and requires a
+ * state machine to keep track of what's going on. A description of
+ * each of the states and their meanings is at adb_states.
+ */
 uint8_t adb_state;
 
 // State information for transmitting a byte
-/// Byte to transmit
+/**
+ * Byte to transmit. An ADB command is 8b sent MSB first (followed by
+ * a stop bit). This value will remain unchanged during the transmit
+ * code and adb_tx_index will be used to reference the bit that is
+ * currently being sent.
+ */
 uint8_t adb_tx_data;
-/// Index of bit to transmit
+
+/**
+ * Index of bit to transmit. References the bit position in adb_tx_data
+ * that is currently being sent. This starts at 7 and decrements to 0.
+ * Because ADB requires a stop bit, this variable is decremented past 0
+ * to -1 and -2. The meanings of each of the possible values are:
+ *
+ * - 7-0: normal.
+ * - -1: Sending the stop bit (same as 0).
+ * - -2: Stop before sending anything, will transition to RX code
+ *       when this value is hit.
+ */
 int8_t adb_tx_index;
-/// Generic variable
-uint8_t i;
 
 // State information for receiving data
-/// Number of bits received
-uint8_t adb_rx_count;
-/// Last received bit
-uint8_t adb_rx_bit;
 /// Received data
 uint8_t adb_rx_data[9];
-/// Length of last received low pulse
-uint8_t adb_rx_low_duration;
+/// Number of bits received
+uint8_t adb_rx_count;
 
+
+/**
+ * Timer0 compare interrupt. Triggered when timer0 matches the compare
+ * value. This is used to make the ADB code send out the next bit.
+ */
 ISR(TIMER0_COMP_vect)
 {
+  uint8_t i;
+
   PORTA &= ~(_BV(1));
 
   switch (adb_state) {
 
   case ADB_STATE_TX_ATTN:
+    // Just finished sending the ATTN pulse.
     adb_state = ADB_STATE_TX_SYNC;
     ADB_PORT = ADB_TX_1;
     // Set up timer for 70us.
-    TCCR0 = (TCCR0 & 0xF8) | 0x2; // prescalar = 8
+    TCCR0 = 0xa;
     TCNT0 = 0;
     OCR0 = 70 / 0.5;
     break;
 
   case ADB_STATE_TX_SYNC:
+    // Just finished the SYNC pulse, which is the same as...
   case ADB_STATE_TX_BIT_HIGH:
+    // Just finished the high part of a bit.
     if (adb_tx_index == -2) {
       adb_state = ADB_STATE_RX_WAIT;
       // Set up port to receive data
@@ -92,7 +117,7 @@ ISR(TIMER0_COMP_vect)
       GIFR |= _BV(5);
       GICR |= _BV(5);
       // Start counting time, up to 240us
-      TCCR0 = (TCCR0 & 0xF8) | 0x3; // prescalar = 64
+      TCCR0 = 0xb;
       TCNT0 = 0;
       OCR0 = 240 / 4;
       break;
@@ -135,7 +160,14 @@ ISR(TIMER0_COMP_vect)
       adb_rx_data[i] = (adb_rx_data[i] << 1) | ((adb_rx_data[i + 1] & 0x80) >> 7);
     }
     adb_rx_count = adb_rx_count - 2;
-    // ... fall through to the next state to wrap up ...
+    // Wrap up
+    TIMSK &= ~(_BV(1)); // disable timer interrupt
+    // Disable INT2
+    GICR &= ~(_BV(5));
+    PORTA |= _BV(2);
+    // All done!
+    adb_state = ADB_STATE_HOLD;
+    break;
 
   case ADB_STATE_RX_WAIT:
     // 240us have elapsed since the stop bit. If an external interrupt
@@ -159,58 +191,13 @@ ISR(TIMER0_COMP_vect)
 }
 
 /**
-   Sends a command packet with the supplied arguments. Takes care of
-   asserting the attention and sync signals and the stop bit. The algorithm
-   is:
-
-   -# Assert attention signal (800us).
-   -# Assert sync signal (70us).
-   -# Send command byte (8 * 100us).
-   -# Send stop bit (100us).
-   -# Release line.
-
-   This is handled by using hardware timer 0 to make this call non-blocking.
-   Once the attention signal has been started this call will return.
-
-   @param[in]  address Device address.
-   @param[in]  command Command to send.
-   @param[in]  reg     Register to read/write.
-   @return     0 for success.
-*/
-int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
-{
-  PORTA &= ~(_BV(0));
-  DDRB = 0xff;
-
-  // Construct command byte
-  adb_tx_data = 0;
-  adb_tx_data |= address << 4;
-  adb_tx_data |= command << 2;
-  adb_tx_data |= reg;
-  adb_tx_index = 7; // data is sent MSB first
-
-  // Prepare to receive data
-  adb_rx_count = 0;
-  memset((void *)adb_rx_data, 0, 9 * sizeof(uint8_t));
-
-  // Start the state machine
-  adb_state = ADB_STATE_TX_ATTN;
-  ADB_PORT = ADB_TX_0;
-  // Kick off the timer for 800us
-  TCCR0 = (TCCR0 & 0xF8) | 0x3; // prescalar = 64
-  TCNT0 = 0;
-  OCR0 = 800 / 4;
-  TIMSK |= _BV(1);
-
-  PORTA |= _BV(0);
-  return 0;
-}
-
-/**
-   External interrupt on ADB pin. Triggered when an ADB device starts 
-   transmitting data to the processor.
-*/
+ * External interrupt on ADB pin. Triggered when an ADB device starts 
+ * transmitting data to the processor.
+ */
 ISR(INT2_vect) {
+  uint8_t adb_rx_bit;
+  uint8_t adb_rx_low_duration;
+
   PORTA &= ~(_BV(1));
 
   switch (adb_state) {
@@ -262,20 +249,21 @@ ISR(INT2_vect) {
   return;
 }
 
-/// Initializes resources used by the ADB host interface.
+
 /**
-   This routine initializes the microprocesser resources used by the ADB code
-   and performs the ADB bringup sequence. This consists of:
-
-   -# Raise the line and remain stable for 1s.
-   -# Perform reset pulse for 4ms (spec states 3ms, but actual Mac II
-   hardware will do 4ms).
-   -# Raise line.
-
-   In addition to setting the ADB processor state interrupts will be enabled.
-
-   @return 0 for success.
-*/
+ * Initialize resources. This routine initializes the microprocesser 
+ * resources used by the ADB code and performs the ADB bringup sequence. 
+ * This consists of:
+ *
+ * -# Raise the line and remain stable for 1s.
+ * -# Perform reset pulse for 4ms (spec states 3ms, but actual Mac II
+ *    hardware will do 4ms).
+ * -# Raise line.
+ *
+ * In addition to setting the ADB processor state interrupts will be enabled.
+ *
+ * @return 0 for success.
+ */
 int8_t adb_init(void)
 {
   // Configure port for output
@@ -298,32 +286,99 @@ int8_t adb_init(void)
   return 0;
 }
 
-/// Polls the active device for new data.
+
 /**
-   Will poll the last active device for register 0. If any data is received
-   0 will be returned and the buffer filled with the data.
-
-   @param[in]  buff    Buffer to fill with received data (8 bytes).
-   @param[out] len     Length (in bits) of received data.
-   @return     0 if data was received, 1 otherwise.
-*/
-int8_t adb_poll(uint8_t *buff, uint8_t *len)
+ * Send a command packet and receive data if sent. Constructs a command
+ * packet and sent according to the ADB specification:
+ *
+ * -# Assert attention signal (800us).
+ * -# Assert sync signal (70us).
+ * -# Send command byte (8 * 100us).
+ * -# Send stop bit (100us).
+ * -# Release line.
+ *
+ * After sending the command packet, this will wait for data to be 
+ * returned. If the device begins sending data then this will begin 
+ * recording it. The specification states that we must wait between
+ * 160us and 240us for the device to start. A response packet looks like:
+ *
+ * -# Start bit (1)
+ * -# Two to eight bytes of data, sent in order of 0 to 7. Each byte is
+ *    sent MSB first.
+ * -# Stop bit (0)
+ *
+ * Returned data is stored in adb_rx_data. The number of bits received
+ * is available in adb_rx_count.
+ *
+ * This code uses timer0 and INT2 to make this call non-blocking.
+ * Once the attention signal has been started this call will return.
+ * Successive calls will return non-zero status until the state machine
+ * reaches idle again.
+ *
+ * @param[in]  address Device address.
+ * @param[in]  command Command to send.
+ * @param[in]  reg     Register to read/write.
+ * @return     0 for success.
+ */
+int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-  uint8_t poll_result = 0;
+  PORTA &= ~(_BV(0));
 
-  // Initialize length
-  *len = 0;
-
-  // If ADB is non-idle then return 1
   if (adb_state != ADB_STATE_IDLE) {
     return 1;
   }
 
+  // Prepare port to output
+  DDRB = 0xff;
+
+  // Construct command byte
+  adb_tx_data = 0;
+  adb_tx_data |= address << 4;
+  adb_tx_data |= command << 2;
+  adb_tx_data |= reg;
+  adb_tx_index = 7; // data is sent MSB first
+
+  // Prepare to receive data
+  adb_rx_count = 0;
+  memset((void *)adb_rx_data, 0, 9 * sizeof(uint8_t));
+
+  // Start the state machine
+  adb_state = ADB_STATE_TX_ATTN;
+  ADB_PORT = ADB_TX_0;
+  // Kick off the timer for 800us
+  TCCR0 = 0xb;
+  TCNT0 = 0;
+  OCR0 = 800 / 4;
+  TIMSK |= _BV(1);
+
+  PORTA |= _BV(0);
+  return 0;
+}
+
+
+/**
+ * Read received data. The ADB state machine will not send
+ * another command while there is data waiting in the buffer.
+ * This copies the ADB data and bit count and resets the state,
+ * allowing another command to be sent.
+ *
+ * @param[in] *len Pointer to store the bit count.
+ * @param[in] buff Pointer to a uint8_t[8] buffer.
+ * @return         0 if data was copied, 1 otherwise.
+ */
+uint8_t adb_read_data(uint8_t *len, uint8_t *buff)
+{
+  // First check to make sure we have received data.
+  if (adb_state != ADB_STATE_HOLD) {
+    return 1;
+  }
+
+  // Copy data.
   *len = adb_rx_count;
   memcpy((void *)buff, (void *)adb_rx_data, 8 * sizeof(uint8_t));
 
-  // Begin a poll command
-  adb_command(last_device, ADB_CMD_TALK, 0);
+  // Reset state machine.
+  adb_state = ADB_STATE_IDLE;
 
-  return poll_result;
+  return 0;
 }
