@@ -71,7 +71,7 @@ int main(void)
       adb_status = adb_read_data(&adb_len, adb_data);
       if (adb_status == 0) {
 	kb_register(adb_data[0]);
-	printf("-I- %d bits %x\n", adb_len, adb_data[0]);
+	//printf("-I- %d bits %x\n", adb_len, adb_data[0]);
       }
     }
     /* USB phase. */

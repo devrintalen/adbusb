@@ -84,11 +84,13 @@ uint8_t adb_rx_count;
  * Timer0 compare interrupt. Triggered when timer0 matches the compare
  * value. This is used to make the ADB code send out the next bit.
  */
-ISR(TIMER0_COMP_vect)
+ISR(TIMER0_COMP_vect, ISR_NOBLOCK)
 {
   uint8_t i;
 
-  PORTA &= ~(_BV(1));
+  TCNT0 = 0;
+
+  PORTA &= ~(_BV(0));
 
   switch (adb_state) {
 
@@ -98,7 +100,6 @@ ISR(TIMER0_COMP_vect)
     ADB_PORT = ADB_TX_1;
     // Set up timer for 70us.
     TCCR0 = 0xa;
-    TCNT0 = 0;
     OCR0 = 70 / 0.5;
     break;
 
@@ -118,14 +119,12 @@ ISR(TIMER0_COMP_vect)
       GICR |= _BV(5);
       // Start counting time, up to 240us
       TCCR0 = 0xb;
-      TCNT0 = 0;
       OCR0 = 240 / 4;
       break;
     }
     ADB_PORT = ADB_TX_0;
     adb_state = ADB_STATE_TX_BIT_LOW;
     // Set up timer for either 35us or 65us.
-    TCNT0 = 0;
     if (adb_tx_index == -1) {
       OCR0 = 65 / 0.5;
     } else if (((adb_tx_data >> adb_tx_index) & 0x1) == 0) {
@@ -139,7 +138,6 @@ ISR(TIMER0_COMP_vect)
     ADB_PORT = ADB_TX_1;
     adb_state = ADB_STATE_TX_BIT_HIGH;
     // Set up timer for either 65us or 35us.
-    TCNT0 = 0;
     if (adb_tx_index == -1) {
       OCR0 = 35 / 0.5;
     } else if (((adb_tx_data >> adb_tx_index) & 0x1) == 0) {
@@ -176,7 +174,6 @@ ISR(TIMER0_COMP_vect)
     TIMSK &= ~(_BV(1)); // disable timer interrupt
     // Disable INT2
     GICR &= ~(_BV(5));
-    PORTA |= _BV(2);
     // All done!
     adb_state = ADB_STATE_IDLE;
     break;
@@ -185,7 +182,7 @@ ISR(TIMER0_COMP_vect)
     break;
   }
 
-  PORTA |= _BV(1);
+  PORTA |= _BV(0);
 
   return;
 }
@@ -194,7 +191,7 @@ ISR(TIMER0_COMP_vect)
  * External interrupt on ADB pin. Triggered when an ADB device starts 
  * transmitting data to the processor.
  */
-ISR(INT2_vect) {
+ISR(INT2_vect, ISR_NOBLOCK) {
   uint8_t adb_rx_bit;
   uint8_t adb_rx_low_duration;
 
@@ -204,7 +201,7 @@ ISR(INT2_vect) {
 
   case ADB_STATE_RX_WAIT:
     TCCR0 = 0xa;
-    OCR0 = 0;
+    OCR0 = 220;
     PORTA &= ~(_BV(2));
     // Purposefully fall through to the next state...
 
@@ -222,13 +219,12 @@ ISR(INT2_vect) {
   case ADB_STATE_RX_HIGH:
     // Capture the duration of the low pulse.
     adb_rx_low_duration = TCNT0;
+    TCNT0 = 0;
     // Record the bit.
     if (adb_rx_low_duration > (40 * 2)) {
       adb_rx_bit = 0;
-      PORTA &= ~(_BV(3));
     } else {
       adb_rx_bit = 1;
-      PORTA |= _BV(3);
     }
     adb_rx_data[adb_rx_count / 8] |= adb_rx_bit << (7 - (adb_rx_count % 8));
     adb_rx_count++;
@@ -322,8 +318,6 @@ int8_t adb_init(void)
  */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
-  PORTA &= ~(_BV(0));
-
   if (adb_state != ADB_STATE_IDLE) {
     return 1;
   }
@@ -351,7 +345,6 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   OCR0 = 800 / 4;
   TIMSK |= _BV(1);
 
-  PORTA |= _BV(0);
   return 0;
 }
 
@@ -366,7 +359,7 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
  * @param[in] buff Pointer to a uint8_t[8] buffer.
  * @return         0 if data was copied, 1 otherwise.
  */
-uint8_t adb_read_data(uint8_t *len, uint8_t *buff)
+int8_t adb_read_data(uint8_t *len, uint8_t *buff)
 {
   // First check to make sure we have received data.
   if (adb_state != ADB_STATE_HOLD) {

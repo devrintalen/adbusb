@@ -23,8 +23,6 @@
 
 /// Output port
 #define ADB_PORT PORTB
-/// Input pin
-#define ADB_PIN PINB
 /// Output low value
 #define ADB_TX_0 0x0
 /// Output high value
@@ -38,7 +36,7 @@
 #define ADB_CMD_TALK 3
 
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg);
-uint8_t adb_read_data(uint8_t *len, uint8_t *buff);
+int8_t adb_read_data(uint8_t *len, uint8_t *buff);
 int8_t adb_init(void);
 
 #endif
