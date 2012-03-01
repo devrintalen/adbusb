@@ -331,3 +331,19 @@ char kb_dtoa(uint8_t keycode)
   return ' ';
 }
 
+/**
+ * Wipe keyboard state. This is used when we receive an invalid payload from
+ * the ADB keyboard. We can no longer be confident in the data we have so we
+ * wipe it to prevent weird things from happening. The worst that will happen
+ * is that the current keypress will be dropped.
+ */
+void kb_reset()
+{
+  kb_mod_ctrl = 0;
+  kb_mod_shift = 0;
+  kb_mod_com = 0;
+  kb_mod_opt = 0;
+  kb_key = 0;
+
+  return;
+}

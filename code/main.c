@@ -70,8 +70,11 @@ int main(void)
       // the command. Attempt to read the data.
       adb_status = adb_read_data(&adb_len, adb_data);
       if (adb_status == 0) {
-	kb_register(adb_data[0]);
-	//printf("-I- %d bits %x\n", adb_len, adb_data[0]);
+	if (adb_len == 16) {
+	  kb_register(adb_data[0]);
+	} else {
+	  kb_reset();
+	}
       }
     }
     /* USB phase. */

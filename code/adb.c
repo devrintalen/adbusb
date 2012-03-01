@@ -86,8 +86,6 @@ uint8_t adb_rx_count;
  */
 ISR(TIMER0_COMP_vect, ISR_NOBLOCK)
 {
-  uint8_t i;
-
   TCNT0 = 0;
 
   PORTA &= ~(_BV(0));
@@ -152,13 +150,6 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK)
     // About 128us have elapsed since the last bit received had started.
     // The ADB device has stopped sending data and we need to stop
     // receiving data.
-    // Remove the start and stop bits from the data by shifting all
-    // eight bytes left by one bit.
-    for(i=0; i<8; i++) {
-      adb_rx_data[i] = (adb_rx_data[i] << 1) | ((adb_rx_data[i + 1] & 0x80) >> 7);
-    }
-    adb_rx_count = adb_rx_count - 2;
-    // Wrap up
     TIMSK &= ~(_BV(1)); // disable timer interrupt
     // Disable INT2
     GICR &= ~(_BV(5));
@@ -192,8 +183,11 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK)
  * transmitting data to the processor.
  */
 ISR(INT2_vect, ISR_NOBLOCK) {
+  uint8_t adb_rx_low_duration = TCNT0;
   uint8_t adb_rx_bit;
-  uint8_t adb_rx_low_duration;
+
+  GICR &= ~(_BV(5));
+  TCNT0 = 0;
 
   PORTA &= ~(_BV(1));
 
@@ -206,20 +200,12 @@ ISR(INT2_vect, ISR_NOBLOCK) {
     // Purposefully fall through to the next state...
 
   case ADB_STATE_RX_LOW:
-    // Begin counting from 0 to determine how long the low pulse is.
-    TCNT0 = 0;
     adb_state = ADB_STATE_RX_HIGH;
     // Enable INT2 to catch a rising edge
-    GICR &= ~(_BV(5));
     MCUCSR |= _BV(6);
-    GIFR |= _BV(5);
-    GICR |= _BV(5);
     break;
 
   case ADB_STATE_RX_HIGH:
-    // Capture the duration of the low pulse.
-    adb_rx_low_duration = TCNT0;
-    TCNT0 = 0;
     // Record the bit.
     if (adb_rx_low_duration > (40 * 2)) {
       adb_rx_bit = 0;
@@ -230,16 +216,17 @@ ISR(INT2_vect, ISR_NOBLOCK) {
     adb_rx_count++;
     adb_state = ADB_STATE_RX_LOW;
     // Enable INT2 to catch a falling edge
-    GICR &= ~(_BV(5));
     MCUCSR &= ~(_BV(6));
-    GIFR |= _BV(5);
-    GICR |= _BV(5);
     break;
 
   default:
     break;
   }
-
+  
+  // Re-enable the external interrupt.
+  GIFR |= _BV(5);
+  GICR |= _BV(5);
+    
   PORTA |= _BV(1);
 
   return;
@@ -361,10 +348,19 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
  */
 int8_t adb_read_data(uint8_t *len, uint8_t *buff)
 {
+  uint8_t i;
+
   // First check to make sure we have received data.
   if (adb_state != ADB_STATE_HOLD) {
     return 1;
   }
+  
+  // Remove the start and stop bits from the data by shifting all
+  // eight bytes left by one bit.
+  for(i=0; i<8; i++) {
+    adb_rx_data[i] = (adb_rx_data[i] << 1) | ((adb_rx_data[i + 1] & 0x80) >> 7);
+  }
+  adb_rx_count = adb_rx_count - 2;
 
   // Copy data.
   *len = adb_rx_count;

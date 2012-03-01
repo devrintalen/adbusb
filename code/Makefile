@@ -21,7 +21,7 @@ HFUSE = 0x99
 OBJECTS=main.o adb.o usb.o uart.o keyboard.o usbdrv/usbdrv.o usbdrv/oddebug.o usbdrv/usbdrvasm.o 
 
 CC=avr-gcc
-CFLAGS=-Wall -g -O2
+CFLAGS=-Wall -g -O3
 CPPFLAGS=-mmcu=$(AVR) -DF_CPU=16000000 -Iusbdrv -I. -DDEBUG_LEVEL=0
 OBJCOPY=avr-objcopy
 OBJCOPYFLAGS=-j .text -j .data -O ihex
