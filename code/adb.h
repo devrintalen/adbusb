@@ -14,6 +14,68 @@
 // You should have received a copy of the GNU General Public License
 // along with ADBUSB.  If not, see <http://www.gnu.org/licenses/>.
 
+/*! \page adb Apple Desktop Bus
+
+Apple Desktop Bus (abbreviated ADB) is a host-controlled synchronous protocol
+developed for the peripherals for the original Apple computer. It is designed
+to allow for daisy-chaining multiple peripherals together.
+
+We don't care about all that stuff, though. How does it work?
+
+\section adbcables Physical connections
+
+ADB devices are connected by a 4-pin mini-DIN connector, the same as s-video.
+The layout of the pins, looking from the front, is:
+
+\verbatim
+  4 3         3 4     1 | Data
+ 2   1       1   2    2 | Power switch
+   =           =      3 | +5V
+ Female       Male    4 | Gnd
+\endverbatim
+
+\section adbprotocol Protocol
+
+All requests are made by the host and are in bytes. Data is sent MSB first, in
+order of lowest byte to highest byte. Every bit is a combination of a low pulse
+and a high pulse for 100us, where the width of each determines which it is.
+
+- \c 0 is 65us low, 35us high.
+- \c 1 is 35us low, 65us high.
+
+A request byte sent from the host is constructed in this way. The address
+that is used can be any four bit value, but after reset keyboards will
+default to address \c 0x2 and mice will default to \c 0x3.
+
+\verbatim
+ 7        4  3  2  1  0
++----------+-----+-----+
+|   Addr   | Cmd | Reg |
++----------+-----+-----+
+                |      \_ 0: primary
+                |         1: n/a
+                |         2: n/a
+                |         3: device ID
+                |
+                 \_______ 0: flush
+                          1: n/a
+                          2: listen
+                          3: talk
+\endverbatim
+
+The protocol to initialize the bus is:
+
+-# Host signals reset.
+-# Host sends talk commands to addresses \c 0x2 and \c 0x3 for
+   register \c 0x3 (device ID).
+-# Device responds and moves to higher address (chosen randomly).
+-# Host tells device to move from new address to an address it 
+   chooses.
+
+
+*/
+
+
 /** \file adb.h
     \brief Global routines for the ADB interface.
 */

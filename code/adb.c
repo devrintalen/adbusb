@@ -330,7 +330,8 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
   TCCR0 = 0xb;
   TCNT0 = 0;
   OCR0 = 800 / 4;
-  TIMSK |= _BV(1);
+  TIFR |= _BV(1); // clear any existing interrupt
+  TIMSK |= _BV(1); // enable interrupt
 
   return 0;
 }
@@ -368,6 +369,11 @@ int8_t adb_read_data(uint8_t *len, uint8_t *buff)
 
   // Reset state machine.
   adb_state = ADB_STATE_IDLE;
+
+  // Temporary debug output to catch bad data
+  if ((*len > 0) && (*len < 16)) {
+    PORTA &= ~(_BV(3));
+  }
 
   return 0;
 }
