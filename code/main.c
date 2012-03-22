@@ -135,6 +135,20 @@ int main(void)
 
   while(1) {
     usbPoll();
+    /* ADB phase. */
+    if (usbInterruptIsReady()) {
+      adb_status = adb_command(2, ADB_CMD_TALK, 0);
+    }
+    if (adb_status != 0) {
+      adb_status = adb_read_data(&adb_len, adb_data);
+      if (adb_status == 0) {
+    	if (adb_len == 16) {
+    	  kb_register(adb_data[0]);
+    	} else {
+    	  //kb_reset();
+    	}
+      }
+    }
     /* USB phase. */
     if (usbInterruptIsReady()) {
       keybReportBuffer.meta = kb_usbhid_modifiers();
@@ -142,20 +156,6 @@ int main(void)
       usbSetInterrupt((void *)&keybReportBuffer, sizeof(keybReportBuffer));
       keybReportBuffer.b[0] = 0;
     }
-    /* ADB phase. */
-    if (usbInterruptIsReady()) {
-      //adb_status = adb_command(2, ADB_CMD_TALK, 0);
-    }
-    /* if (adb_status != 0) { */
-    /*   adb_status = adb_read_data(&adb_len, adb_data); */
-    /*   if (adb_status == 0) { */
-    /* 	if (adb_len == 16) { */
-    /* 	  kb_register(adb_data[0]); */
-    /* 	} else { */
-    /* 	  //kb_reset(); */
-    /* 	} */
-    /*   } */
-    /* } */
   }
 
   return 0;

@@ -18,7 +18,9 @@
 
 Apple Desktop Bus (abbreviated ADB) is a host-controlled synchronous protocol
 developed for the peripherals for the original Apple computer. It is designed
-to allow for daisy-chaining multiple peripherals together.
+to allow for daisy-chaining multiple peripherals together. To get a more
+detailed overview, and for the history, read up on the
+<A HREF="">Wikipedia page on ADB</A>.
 
 We don't care about all that stuff, though. How does it work?
 

@@ -103,14 +103,16 @@ void usb_init()
 {
   uint8_t i;
 
-  odDebugInit();
-  usbInit();
+  //odDebugInit();
+
   usbDeviceDisconnect();  /* enforce re-enumeration, do this while interrupts are disabled! */
   i = 0;
   while(--i){             /* fake USB disconnect for > 250 ms */
-    _delay_ms(1);
+    _delay_ms(1.0);
   }
   usbDeviceConnect();
+
+  usbInit();
   sei();
 
   return;

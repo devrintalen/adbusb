@@ -61,13 +61,13 @@ section at the end of this file).
 
 /* ----------------------- Optional Hardware Config ------------------------ */
 
-/* #define USB_CFG_PULLUP_IOPORTNAME   D */
+#define USB_CFG_PULLUP_IOPORTNAME   D
 /* If you connect the 1.5k pullup resistor from D- to a port pin instead of
  * V+, you can connect and disconnect the device from firmware by calling
  * the macros usbDeviceConnect() and usbDeviceDisconnect() (see usbdrv.h).
  * This constant defines the port on which the pullup resistor is connected.
  */
-/* #define USB_CFG_PULLUP_BIT          4 */
+#define USB_CFG_PULLUP_BIT          0
 /* This constant defines the bit number in USB_CFG_PULLUP_IOPORT (defined
  * above) where the 1.5k pullup resistor is connected. See description
  * above for details.
@@ -115,11 +115,11 @@ section at the end of this file).
  * interval. The value is in milliseconds and must not be less than 10 ms for
  * low speed devices.
  */
-#define USB_CFG_IS_SELF_POWERED         1
+#define USB_CFG_IS_SELF_POWERED         0
 /* Define this to 1 if the device has its own power supply. Set it to 0 if the
  * device is powered from the USB bus.
  */
-#define USB_CFG_MAX_BUS_POWER           20
+#define USB_CFG_MAX_BUS_POWER           100
 /* Set this variable to the maximum USB bus power consumption of your device.
  * The value is in milliamperes. [It will be divided by two since USB
  * communicates power requirements in units of 2 mA.]
