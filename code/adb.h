@@ -45,6 +45,12 @@ and a high pulse for 100us, where the width of each determines which it is.
 - \c 0 is 65us low, 35us high.
 - \c 1 is 35us low, 65us high.
 
+\verbatim
+   _      __        _    ____
+0:  |____|  |_   1:  |__|    |_
+      65  35          35  65
+\endverbatim
+
 A request byte sent from the host is constructed in this way. The address
 that is used can be any four bit value, but after reset keyboards will
 default to address \c 0x2 and mice will default to \c 0x3.
@@ -74,12 +80,29 @@ The protocol to initialize the bus is:
 -# Host tells device to move from new address to an address it 
    chooses.
 
+After initialization the flow is:
 
+-# Attention signal (low for 800us).
+-# Sync signal (high for 70us).
+-# Command packet
+   - 8 bits (100us each)
+   - Stop bit (same as a 0)
+-# Tlt signal (stop-to-start time, high for 160 to 240us).
+-# Data packet
+   - 2-8 bytes
+
+Devices ask for attention with a service request (Srq) signal. This is
+a low signal for 300us. An Srq can only be sent by a device during the 
+stop bit cell time if the request is not for it (to a different address).
+
+The default active device is \c 0x3. The host should continuously poll
+the last active device (that asserted Srq). The device will only 
+respond if it has data to send.
 */
 
-
-/** \file adb.h
-    \brief Global routines for the ADB interface.
+/*!
+  \file adb.h
+  \brief Global routines for the ADB interface.
 */
 
 #ifndef __inc_adb__
@@ -99,6 +122,39 @@ The protocol to initialize the bus is:
 /// 2b code for a talk command.
 #define ADB_CMD_TALK 3
 
+/**
+ * Send a command packet and receive data if sent. Constructs a command
+ * packet and sent according to the ADB specification:
+ *
+ * -# Assert attention signal (800us).
+ * -# Assert sync signal (70us).
+ * -# Send command byte (8 * 100us).
+ * -# Send stop bit (100us).
+ * -# Release line.
+ *
+ * After sending the command packet, this will wait for data to be 
+ * returned. If the device begins sending data then this will begin 
+ * recording it. The specification states that we must wait between
+ * 160us and 240us for the device to start. A response packet looks like:
+ *
+ * -# Start bit (1)
+ * -# Two to eight bytes of data, sent in order of 0 to 7. Each byte is
+ *    sent MSB first.
+ * -# Stop bit (0)
+ *
+ * Returned data is stored in adb_rx_data. The number of bits received
+ * is available in adb_rx_count.
+ *
+ * This code uses timer0 and INT2 to make this call non-blocking.
+ * Once the attention signal has been started this call will return.
+ * Successive calls will return non-zero status until the state machine
+ * reaches idle again.
+ *
+ * @param[in]  address Device address.
+ * @param[in]  command Command to send.
+ * @param[in]  reg     Register to read/write.
+ * @return     0 for success.
+ */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg);
 int8_t adb_read_data(uint8_t *len, uint8_t *buff);
 int8_t adb_init(void);

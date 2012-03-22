@@ -270,39 +270,6 @@ int8_t adb_init(void)
 }
 
 
-/**
- * Send a command packet and receive data if sent. Constructs a command
- * packet and sent according to the ADB specification:
- *
- * -# Assert attention signal (800us).
- * -# Assert sync signal (70us).
- * -# Send command byte (8 * 100us).
- * -# Send stop bit (100us).
- * -# Release line.
- *
- * After sending the command packet, this will wait for data to be 
- * returned. If the device begins sending data then this will begin 
- * recording it. The specification states that we must wait between
- * 160us and 240us for the device to start. A response packet looks like:
- *
- * -# Start bit (1)
- * -# Two to eight bytes of data, sent in order of 0 to 7. Each byte is
- *    sent MSB first.
- * -# Stop bit (0)
- *
- * Returned data is stored in adb_rx_data. The number of bits received
- * is available in adb_rx_count.
- *
- * This code uses timer0 and INT2 to make this call non-blocking.
- * Once the attention signal has been started this call will return.
- * Successive calls will return non-zero status until the state machine
- * reaches idle again.
- *
- * @param[in]  address Device address.
- * @param[in]  command Command to send.
- * @param[in]  reg     Register to read/write.
- * @return     0 for success.
- */
 int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 {
   if (adb_state != ADB_STATE_IDLE) {

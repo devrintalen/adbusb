@@ -91,6 +91,10 @@ documentation run the following in the \c doc/ directory:
 Then open the \c doc/html/index.html file in your web browser.
 */
 
+/*! 
+  \file main.c
+  \brief Main program source.
+*/
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -105,12 +109,12 @@ Then open the \c doc/html/index.html file in your web browser.
 /// File handle to UART device
 static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 
-/** \brief Reset entry point.
- *
- * At reset the device starts executing at this point. This will call
- * initializers to set up the ADB and USB interfaces. It then enters the main
- * loop and polls the ADB device and sends data on the USB interface as
- * needed.
+/*! \brief Reset entry point.
+  
+  At reset the device starts executing at this point. This will call
+  initializers to set up the ADB and USB interfaces. It then enters the main
+  loop and polls the ADB device and sends data on the USB interface as
+  needed.
 */
 int main(void)
 {
