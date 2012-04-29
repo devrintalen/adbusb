@@ -233,20 +233,6 @@ ISR(INT2_vect, ISR_NOBLOCK) {
 }
 
 
-/**
- * Initialize resources. This routine initializes the microprocesser 
- * resources used by the ADB code and performs the ADB bringup sequence. 
- * This consists of:
- *
- * -# Raise the line and remain stable for 1s.
- * -# Perform reset pulse for 4ms (spec states 3ms, but actual Mac II
- *    hardware will do 4ms).
- * -# Raise line.
- *
- * In addition to setting the ADB processor state interrupts will be enabled.
- *
- * @return 0 for success.
- */
 int8_t adb_init(void)
 {
   // Configure port for output
@@ -304,16 +290,6 @@ int8_t adb_command(uint8_t address, uint8_t command, uint8_t reg)
 }
 
 
-/**
- * Read received data. The ADB state machine will not send
- * another command while there is data waiting in the buffer.
- * This copies the ADB data and bit count and resets the state,
- * allowing another command to be sent.
- *
- * @param[in] *len Pointer to store the bit count.
- * @param[in] buff Pointer to a uint8_t[8] buffer.
- * @return         0 if data was copied, 1 otherwise.
- */
 int8_t adb_read_data(uint8_t *len, uint8_t *buff)
 {
   uint8_t i;
