@@ -17,34 +17,33 @@
 
 /*! \mainpage ADBUSB Manual
 
-This is an open-source adapter that allows you to use an old Apple keyboard! It
-is a USB to ADB converter that represents the keyboard as a USB HID keyboard,
-meaning no special drivers are required. It powers itself and the keyboard
-through the USB connection.
+ADBUSB is an adapter that turns an ADB keyboard into a USB HID keyboard. I found an Apple Extended Keyboard II at the MIT fleamarket a few years back and wanted to be able to use it for my day-to-day programming. I looked around at the various products that turned ADB to USB, and decided to roll my own (as any computer engineer should). This project is the fruit of those efforts and I have strived to be as verbose and thorough as possible. Everything you would need to build your own, including source code, schematics, and parts lists, is included.
 
 Features:
-
 - Self-powered
-- Only supports one keyboard connection (no daisy-chaining, no mice, etc.)
+- Translates ADB to USB
+- Works with the complete ADB keycode set (all keys, function keys, etc. are supported)
+- No drives to install
+- Tested
 
-This project makes use of the <A HREF="http://www.obdev.at/vusb/">V-USB</A> open source USB driver.
+Limitations:
+- Only supports one keyboard connection (no daisy-chaining, no mice, etc.)
+- Created for AVR microcontrollers only
+
+This project makes use of the <A HREF="http://www.obdev.at/vusb/">V-USB</A> open-source USB driver.
 
 This manual is divided into the following sections:
 - \subpage install
+- Circuit (coming soon)
 - \subpage adb
+- \subpage references
 
-\section References
-
--# http://en.wikipedia.org/wiki/Apple_Desktop_Bus
--# http://mcosre.sourceforge.net/docs/adb_intro.html
--# http://geekhack.org/showwiki.php?title=Island:14290
 */
 
 
 /*! \page install Installation
 
-This project includes software for an Atmel AVR microcontroller and schematics
-and designs for a PCB.
+ADBUSB runs entirely on one AVR microcontroller. I created the project on a Mega32, but you could use just about any of the Mega-series microcontrollers without modifying much. The code is relatively small and portable, topping out at around 4KB of flash.
 
 \section depens Dependencies
 
@@ -57,39 +56,46 @@ order to compile the source. On Ubuntu, you can do this with:
 % sudo apt-get install gcc-avr avr-libc avrdude
 \endverbatim
 
-Other distributions may have a different process.
+Other distributions may have a different process. You also need a programmer to flash the microcontroller. I'm fond of the STK500, but programmers like the AVR ISP are also popular and well-supported by avrdude.
 
-\section buildcode Building for the AVR
+\section buildcode Building
 
-All of the source code is in the \c code/ subdirectory. The Makefile defines
-these targets:
+All of the source code is in the \c code/ subdirectory. The Makefile defines these targets:
 
 - \c all: Compiles all of the source files into \c main.hex.
-- \c install: Uses avrdude to program the microcontroller.
+- \c install: Program the microcontroller using avrdude.
 - \c fixfuse: Resets fuse settings on the Mega32 to something that I know works.
+- \c clean: Remove all compiler-generated files.
 
-You may need to update the Makefile according to your environment and the
-device you are programming. The variables to look out for are \c AVR, which
-defines the device (this is passed to \c avr-gcc) and \c PROGFLAGS, which are
-the flags passed to \c avrdude during programming.
+You may need to update the Makefile according to your environment and the device you are programming. The variables to look out for are \c AVR, which defines the device (this is passed to \c avr-gcc) and \c PROGFLAGS, which are the flags passed to \c avrdude during programming.
 
-\section buildschem Assembling a circuit
+In general, there are very few steps to programming the AVR. Connect your programmer, change to the \c code/ directory, and then run:
 
-Once you are able to program your device, you need to assemble a circuit
-according to the schematics under \c schematic/, which is coming soon. I
-haven't gotten far enough on the project yet to need this.
+\verbatim
+% make all
+% make install
+\endverbatim
 
 \section builddoc Documentation
 
-The code is documented in a Doxygen-friendly format. To generate the
-documentation run the following in the \c doc/ directory:
+The code is documented in a Doxygen-friendly format. To generate this documentation run the following in the \c doc/ directory:
 
 \verbatim
 % make all
 \endverbatim
 
 Then open the \c doc/html/index.html file in your web browser.
+
 */
+
+
+/*! \page references References and Further Reading
+
+-# http://en.wikipedia.org/wiki/Apple_Desktop_Bus
+-# http://mcosre.sourceforge.net/docs/adb_intro.html
+-# http://geekhack.org/showwiki.php?title=Island:14290
+
+ */
 
 /*! 
   \file main.c
