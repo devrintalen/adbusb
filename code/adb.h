@@ -41,7 +41,7 @@ All requests are made by the host and are in bytes. Data is sent MSB first, in o
 
 \verbatim
    _      __        _    ____
-0:  |____|  |_   1:  |__|    |_
+0:  \____/  \_   1:  \__/    \_
       65  35          35  65
 \endverbatim
 

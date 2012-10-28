@@ -19,11 +19,13 @@
 
 ADBUSB is an adapter that turns an ADB keyboard into a USB HID keyboard. I found an Apple Extended Keyboard II at the MIT fleamarket a few years back and wanted to be able to use it for my day-to-day programming. I looked around at the various products that turned ADB to USB, and decided to roll my own (as any computer engineer should). This project is the fruit of those efforts and I have strived to be as verbose and thorough as possible. Everything you would need to build your own, including source code, schematics, and parts lists, is included.
 
+The latest source is always available at https://github.com/devrintalen/adbusb
+
 Features:
 - Self-powered
 - Translates ADB to USB
 - Works with the complete ADB keycode set (all keys, function keys, etc. are supported)
-- No drives to install
+- No drivers to install (HID-compliant)
 - Tested
 
 Limitations:
@@ -91,9 +93,23 @@ Then open the \c doc/html/index.html file in your web browser.
 
 /*! \page references References and Further Reading
 
--# http://en.wikipedia.org/wiki/Apple_Desktop_Bus
--# http://mcosre.sourceforge.net/docs/adb_intro.html
--# http://geekhack.org/showwiki.php?title=Island:14290
+I've broken this out into different sections. This first set of links covers your basic introductory material for Apple Desktop Bus:
+
+- http://en.wikipedia.org/wiki/Apple_Desktop_Bus
+- http://www.microchip.com/stellent/idcplg?IdcService=SS_GET_PAGE&nodeId=1824&appnote=en011062
+- http://mcosre.sourceforge.net/docs/adb_intro.html
+
+This set of links is of other projects that have done similar things with Apple Desktop Bus:
+
+- http://geekhack.org/showwiki.php?title=Island:14290
+- http://spritesmods.com/?art=macsearm&page=4
+- https://github.com/tmk/tmk_keyboard
+
+And this final set is of materials that are relevant to the USB firmware and the AVR:
+
+- http://www.obdev.at/products/vusb/hidkeys.html
+- http://www.atmel.com/Images/doc2521.pdf
+- http://www.usb.org/developers/docs/hidpage/
 
  */
 
