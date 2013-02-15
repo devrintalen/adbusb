@@ -19,5 +19,5 @@ And this final set is of materials that are relevant to the USB
 firmware and the AVR:
 
 * http://www.obdev.at/products/vusb/hidkeys.html
-* http://www.atmel.com/Images/doc2521.pdf
+* [Atmel AVR042: AVR Hardware Design Considerations](http://www.atmel.com/Images/doc2521.pdf) (pdf)
 * http://www.usb.org/developers/docs/hidpage/

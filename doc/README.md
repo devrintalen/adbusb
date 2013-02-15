@@ -24,7 +24,7 @@ Limitations:
 * Only supports one keyboard connection (no daisy-chaining, no mice, etc.)
 * Created for AVR microcontrollers only
 
-This project makes use of the [V-USB] open-source USB driver.
+This project makes use of the [V-USB][vusb] open-source USB driver.
 
 This manual is divided into the following sections:
 * [Installation](@ref install)
@@ -32,4 +32,4 @@ This manual is divided into the following sections:
 * [Apple Desktop Bus](@ref adb)
 * [References and further reading](@ref references)
 
-[V-USB]: http://www.obdev.at/vusb/
+[vusb]: http://www.obdev.at/vusb/
