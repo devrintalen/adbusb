@@ -5,7 +5,7 @@ C 44200 41000 1 0 0 ATmega32MLF-1.sym
 T 45600 50400 5 10 0 0 0 0 1
 device=ATMEGA32
 T 45600 50600 5 10 0 0 0 0 1
-footprint=TQFN44_7_EP
+footprint=TQFP44_10
 T 47900 50200 5 10 1 1 0 0 1
 refdes=U1
 T 45600 51000 5 10 0 0 0 0 1
@@ -37,7 +37,7 @@ symversion=0.1
 T 43100 42000 5 10 1 1 0 0 1
 value=27p
 T 43400 42000 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 C 43400 41300 1 0 1 capacitor-1.sym
 {
@@ -50,7 +50,7 @@ symversion=0.1
 T 43100 41300 5 10 1 1 0 0 1
 value=27p
 T 43400 41300 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 N 44100 42200 43400 42200 4
 N 44100 41500 43400 41500 4
@@ -66,7 +66,7 @@ symversion=0.1
 T 50600 44700 5 10 1 1 270 0 1
 value=100n
 T 50800 45000 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 C 50900 43600 1 0 0 gnd-1.sym
 C 42600 40800 1 0 1 gnd-1.sym
@@ -92,7 +92,7 @@ refdes=R1
 T 51800 48300 5 10 1 1 0 0 1
 value=68
 T 52100 48700 5 10 0 0 0 0 1
-footprint=0805
+footprint=1206
 }
 C 51200 48800 1 0 0 resistor-1.sym
 {
@@ -103,7 +103,7 @@ refdes=R2
 T 51800 49100 5 10 1 1 0 0 1
 value=68
 T 51200 48800 5 10 0 0 0 0 1
-footprint=0805
+footprint=1206
 }
 C 52500 50000 1 270 0 resistor-1.sym
 {
@@ -114,7 +114,7 @@ refdes=R3
 T 52300 49900 5 10 1 1 270 0 1
 value=1k5
 T 52500 50000 5 10 0 0 0 0 1
-footprint=0805
+footprint=1206
 }
 C 53900 50000 1 270 0 capacitor-2.sym
 {
@@ -127,7 +127,7 @@ symversion=0.1
 T 53700 49800 5 10 1 1 270 0 1
 value=4u7
 T 53900 50000 5 10 0 0 0 0 1
-footprint=0603
+footprint=RCY100P
 }
 C 54000 46700 1 0 0 gnd-1.sym
 C 52800 47400 1 90 0 zener-1.sym
@@ -209,7 +209,7 @@ refdes=R4
 T 42800 43800 5 10 1 1 90 0 1
 value=1k5
 T 42600 43800 5 10 0 0 0 0 1
-footprint=0805
+footprint=1206
 }
 N 42100 43500 44300 43500 4
 N 42500 43500 42500 43800 4
@@ -271,7 +271,7 @@ symversion=0.1
 T 51600 44700 5 10 1 1 270 0 1
 value=100n
 T 51800 45000 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 C 51900 43600 1 0 0 gnd-1.sym
 N 52000 44100 52000 43900 4
@@ -286,7 +286,7 @@ symversion=0.1
 T 52600 44700 5 10 1 1 270 0 1
 value=100n
 T 52800 45000 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 C 52900 43600 1 0 0 gnd-1.sym
 N 53000 44100 53000 43900 4
@@ -305,7 +305,7 @@ symversion=0.1
 T 53600 44700 5 10 1 1 270 0 1
 value=100n
 T 53800 45000 5 10 0 0 0 0 1
-footprint=0603
+footprint=1206
 }
 C 53900 43600 1 0 0 gnd-1.sym
 N 54000 44100 54000 43900 4
