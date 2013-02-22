@@ -35,7 +35,14 @@ static FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
 /*! \brief Reset entry point.
   
   At reset the device starts executing at this point. This will call
-  initializers to set up the ADB and USB interfaces. It then enters the main
+  initializers to disable the watch dog timer and enable the ADB and
+  USB interfaces. The watch dog timer is a nice feature to have but it hasn't been necessary (yet) for this project.
+
+  The function usb_init() handles all of the USB interface initialization. No other global state is necessary for 
+  The ADB interface is set up by declaring and initializing the variables that the data returned by the keyboard. The adb_init() function is then called, which will handle the reset tasks on the line.
+
+
+It then enters the main
   loop and polls the ADB device and sends data on the USB interface as
   needed.
 */
