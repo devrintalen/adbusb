@@ -33,7 +33,7 @@
 /**
    This is copied shamelessly from the spritesmodes code.
 */
-char usbHidReportDescriptor[] PROGMEM = {
+extern const char usbHidReportDescriptor[] PROGMEM = {
   /* partial keyboard */
   0x05, 0x01,	/* Usage Page (Generic Desktop), */
   0x09, 0x06,	/* Usage (Keyboard), */

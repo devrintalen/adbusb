@@ -51,7 +51,7 @@ struct keycode_translation {
  * Maps ADB keycodes to USB HID values. See chapter 10 of the 
  * USB HID Usage Tables document.
  */
-struct keycode_translation keycodes[] PROGMEM = {
+const struct keycode_translation keycodes[] PROGMEM = {
 
   // <esc> 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
   {0x35, 41, ' '},
